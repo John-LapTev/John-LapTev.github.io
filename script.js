@@ -72,10 +72,10 @@ function updateBlocks() {
                     }
                 }
                 
-                block.style.width = `${width * 100/6}%`;
-                block.style.height = `${height * 100/6}%`;
-                block.style.left = `${j * 100/6}%`;
-                block.style.top = `${i * 100/6}%`;
+                block.style.width = `calc(${width * 100/6}% - 2%)`;
+                block.style.height = `calc(${height * 100/6}% - 2%)`;
+                block.style.left = `calc(${j * 100/6}% + 1%)`;
+                block.style.top = `calc(${i * 100/6}% + 1%)`;
                 block.dataset.row = i;
                 block.dataset.col = j;
                 block.dataset.width = width;
@@ -100,6 +100,7 @@ function updateBlocks() {
 function startDrag(e) {
     if (!gameStarted) return;
     e.preventDefault();
+    e.stopPropagation();
     selectedBlock = e.target.closest('.block');
     const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
     const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
@@ -110,6 +111,7 @@ function startDrag(e) {
 
     function drag(e) {
         e.preventDefault();
+        e.stopPropagation();
         const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
         const dx = currentX - startX;
@@ -117,12 +119,12 @@ function startDrag(e) {
         if (isHorizontal) {
             const newLeft = Math.round((startLeft + dx) / cellSize) * cellSize;
             if (canMove(selectedBlock, newLeft, startTop)) {
-                selectedBlock.style.left = `${newLeft / gameBoard.clientWidth * 100}%`;
+                selectedBlock.style.left = `calc(${(newLeft / gameBoard.clientWidth * 100)}% + 1%)`;
             }
         } else {
             const newTop = Math.round((startTop + dy) / cellSize) * cellSize;
             if (canMove(selectedBlock, startLeft, newTop)) {
-                selectedBlock.style.top = `${newTop / gameBoard.clientHeight * 100}%`;
+                selectedBlock.style.top = `calc(${(newTop / gameBoard.clientHeight * 100)}% + 1%)`;
             }
         }
     }
@@ -144,13 +146,13 @@ function startDrag(e) {
 
 function canMove(block, newLeft, newTop) {
     const blockType = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
-    const newCol = Math.round(newLeft / (gameBoard.clientWidth / 6));
-    const newRow = Math.round(newTop / (gameBoard.clientHeight / 6));
+    const newCol = Math.round((newLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
+    const newRow = Math.round((newTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
     const width = parseInt(block.dataset.width);
     const height = parseInt(block.dataset.height);
 
-    const oldCol = Math.round(block.offsetLeft / (gameBoard.clientWidth / 6));
-    const oldRow = Math.round(block.offsetTop / (gameBoard.clientHeight / 6));
+    const oldCol = Math.round((block.offsetLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
+    const oldRow = Math.round((block.offsetTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
 
     if (newRow < 0 || newRow + height > 6 || newCol < 0 || newCol + width > 6) {
         return false;
@@ -172,8 +174,8 @@ function updateBoardState() {
     currentBoard = Array(6).fill().map(() => Array(6).fill(EMPTY));
     const blocks = gameBoard.querySelectorAll('.block');
     blocks.forEach(block => {
-        const col = Math.round(block.offsetLeft / (gameBoard.clientWidth / 6));
-        const row = Math.round(block.offsetTop / (gameBoard.clientHeight / 6));
+        const col = Math.round((block.offsetLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
+        const row = Math.round((block.offsetTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
         const type = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
         const width = parseInt(block.dataset.width);
         const height = parseInt(block.dataset.height);
@@ -189,7 +191,7 @@ function checkWin() {
     if (currentBoard[2][5] === KEY) {
         const keyBlock = gameBoard.querySelector('.k');
         keyBlock.style.transition = 'all 1s ease';
-        keyBlock.style.left = '100%';
+        keyBlock.style.left = 'calc(100% - 1%)';
         setTimeout(() => {
             endGame();
         }, 1000);
