@@ -52,7 +52,6 @@ function updateBlocks() {
     const blocks = gameBoard.querySelectorAll('.block');
     blocks.forEach(block => block.remove());
 
-    const cellSize = gameBoard.clientWidth / 6;
     const visited = Array(6).fill().map(() => Array(6).fill(false));
 
     for (let i = 0; i < 6; i++) {
@@ -72,10 +71,10 @@ function updateBlocks() {
                     }
                 }
                 
-                block.style.width = `calc(${width * 100/6}% - 2%)`;
-                block.style.height = `calc(${height * 100/6}% - 2%)`;
-                block.style.left = `calc(${j * 100/6}% + 1%)`;
-                block.style.top = `calc(${i * 100/6}% + 1%)`;
+                block.style.width = `${width * 58 - 4}px`;
+                block.style.height = `${height * 58 - 4}px`;
+                block.style.left = `${j * 58 + 2}px`;
+                block.style.top = `${i * 58 + 2}px`;
                 block.dataset.row = i;
                 block.dataset.col = j;
                 block.dataset.width = width;
@@ -104,9 +103,8 @@ function startDrag(e) {
     selectedBlock = e.target.closest('.block');
     const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
     const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-    const startLeft = selectedBlock.offsetLeft;
-    const startTop = selectedBlock.offsetTop;
-    const cellSize = gameBoard.clientWidth / 6;
+    const startLeft = parseInt(selectedBlock.style.left);
+    const startTop = parseInt(selectedBlock.style.top);
     const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
 
     function drag(e) {
@@ -117,14 +115,14 @@ function startDrag(e) {
         const dx = currentX - startX;
         const dy = currentY - startY;
         if (isHorizontal) {
-            const newLeft = Math.round((startLeft + dx) / cellSize) * cellSize;
+            const newLeft = Math.round((startLeft + dx - 2) / 58) * 58 + 2;
             if (canMove(selectedBlock, newLeft, startTop)) {
-                selectedBlock.style.left = `calc(${(newLeft / gameBoard.clientWidth * 100)}% + 1%)`;
+                selectedBlock.style.left = `${newLeft}px`;
             }
         } else {
-            const newTop = Math.round((startTop + dy) / cellSize) * cellSize;
+            const newTop = Math.round((startTop + dy - 2) / 58) * 58 + 2;
             if (canMove(selectedBlock, startLeft, newTop)) {
-                selectedBlock.style.top = `calc(${(newTop / gameBoard.clientHeight * 100)}% + 1%)`;
+                selectedBlock.style.top = `${newTop}px`;
             }
         }
     }
@@ -146,13 +144,13 @@ function startDrag(e) {
 
 function canMove(block, newLeft, newTop) {
     const blockType = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
-    const newCol = Math.round((newLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
-    const newRow = Math.round((newTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
+    const newCol = Math.round((newLeft - 2) / 58);
+    const newRow = Math.round((newTop - 2) / 58);
     const width = parseInt(block.dataset.width);
     const height = parseInt(block.dataset.height);
 
-    const oldCol = Math.round((block.offsetLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
-    const oldRow = Math.round((block.offsetTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
+    const oldCol = Math.round((parseInt(block.style.left) - 2) / 58);
+    const oldRow = Math.round((parseInt(block.style.top) - 2) / 58);
 
     if (newRow < 0 || newRow + height > 6 || newCol < 0 || newCol + width > 6) {
         return false;
@@ -174,8 +172,8 @@ function updateBoardState() {
     currentBoard = Array(6).fill().map(() => Array(6).fill(EMPTY));
     const blocks = gameBoard.querySelectorAll('.block');
     blocks.forEach(block => {
-        const col = Math.round((block.offsetLeft - gameBoard.clientWidth * 0.01) / (gameBoard.clientWidth / 6));
-        const row = Math.round((block.offsetTop - gameBoard.clientHeight * 0.01) / (gameBoard.clientHeight / 6));
+        const col = Math.round((parseInt(block.style.left) - 2) / 58);
+        const row = Math.round((parseInt(block.style.top) - 2) / 58);
         const type = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
         const width = parseInt(block.dataset.width);
         const height = parseInt(block.dataset.height);
@@ -191,7 +189,7 @@ function checkWin() {
     if (currentBoard[2][5] === KEY) {
         const keyBlock = gameBoard.querySelector('.k');
         keyBlock.style.transition = 'all 1s ease';
-        keyBlock.style.left = 'calc(100% - 1%)';
+        keyBlock.style.left = '348px';
         setTimeout(() => {
             endGame();
         }, 1000);
@@ -238,4 +236,27 @@ function autoPlay() {
 
 createBoard();
 startOverlay.addEventListener('click', startGame);
-gameBoard.addEventListener('touchstart', startDrag, { passive: false });
+gameBoard.addEventListener('touchstart', (e) => {
+    if (e.target === startOverlay) {
+        startGame();
+    }
+}, { passive: false });
+
+// Предотвращение прокрутки страницы при перетаскивании блоков
+document.body.addEventListener('touchmove', (e) => {
+    if (gameStarted) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Обработка изменения размера окна
+window.addEventListener('resize', () => {
+    if (window.innerWidth <= 400) {
+        gameBoard.style.transform = `scale(${window.innerWidth / 400})`;
+    } else {
+        gameBoard.style.transform = 'scale(1)';
+    }
+});
+
+// Вызов обработчика изменения размера при загрузке страницы
+window.dispatchEvent(new Event('resize'));
