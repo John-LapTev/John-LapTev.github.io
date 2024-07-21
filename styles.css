@@ -1,21 +1,13 @@
-html, body {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-}
-
 body {
     font-family: Arial, sans-serif;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     background-color: #f0f0f0;
     margin: 0;
     padding: 20px;
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
 #game-container {
@@ -23,13 +15,8 @@ body {
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    max-width: 90%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin: auto;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 #timer {
@@ -41,21 +28,19 @@ body {
 }
 
 #game-board {
-    max-width: 100%;
-    max-height: calc(100vh - 150px);
-    aspect-ratio: 1 / 1;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: 2px;
+    grid-template-columns: repeat(6, 58px);
+    grid-template-rows: repeat(6, 58px);
+    gap: 0;
     background-color: #444;
     border-radius: 5px;
     position: relative;
     overflow: hidden;
-    padding: 1%;
 }
 
 .cell {
+    width: 58px;
+    height: 58px;
     background-color: #222;
     box-sizing: border-box;
     border: 1px solid #444;
@@ -67,13 +52,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3vmin;
+    font-size: 24px;
     cursor: move;
     transition: all 0.2s ease;
     user-select: none;
     z-index: 10;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    margin: 1%;
 }
 
 .block:hover {
@@ -99,17 +83,18 @@ body {
 
 .exit {
     position: absolute;
-    right: -4.17%;
-    top: 33.33%;
-    width: 4.67%;
-    height: 16.67%;
+    right: -25px;
+    top: 116px;
+    width: 28px;
+    height: 58px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3vmin;
+    font-size: 24px;
     background-color: #ffdc00;
     color: #222;
     animation: glow 2s infinite;
+    z-index: 20;
 }
 
 @keyframes glow {
@@ -130,8 +115,6 @@ body {
     align-items: center;
     z-index: 20;
     transition: opacity 0.5s ease;
-    font-size: 5vmin;
-    color: white;
 }
 
 #controls {
@@ -198,22 +181,9 @@ footer a:hover {
     text-decoration: underline;
 }
 
-@media (max-width: 600px) {
-    #game-container {
-        padding: 10px;
-    }
-}
-
-@media (max-aspect-ratio: 1/1) {
+@media (max-width: 400px) {
     #game-board {
-        width: 90vw;
-        height: 90vw;
-    }
-}
-
-@media (min-aspect-ratio: 1/1) {
-    #game-board {
-        width: 90vh;
-        height: 90vh;
+        transform: scale(0.9);
+        transform-origin: top left;
     }
 }
