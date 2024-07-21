@@ -3,11 +3,15 @@ const timer = document.getElementById('timer');
 const resetBtn = document.getElementById('reset-btn');
 const autoBtn = document.getElementById('auto-btn');
 const startOverlay = document.getElementById('start-overlay');
+const languageSwitcher = document.getElementById('language-switcher');
+const currentLang = document.getElementById('current-lang');
+const startBtn = document.getElementById('start-btn');
 
 let startTime;
 let timerInterval;
 let gameStarted = false;
 let selectedBlock = null;
+let isRussian = true;
 
 const EMPTY = 'E';
 const RED = 'R';
@@ -25,12 +29,40 @@ const initialBoard = [
 
 let currentBoard = JSON.parse(JSON.stringify(initialBoard));
 
-if (resetBtn) {
-    resetBtn.addEventListener('click', resetGame);
+const translations = {
+    ru: {
+        start: 'СТАРТ',
+        reset: 'СБРОС',
+        autoPlay: 'АВТО ИГРА',
+        playHamsterKombat: 'Играть в Hamster Kombat',
+        congratulations: 'Поздравляем! Вы прошли игру за',
+        autoPlayNotImplemented: 'Функция автоматической игры пока не реализована'
+    },
+    en: {
+        start: 'START',
+        reset: 'RESET',
+        autoPlay: 'AUTO PLAY',
+        playHamsterKombat: 'Play Hamster Kombat',
+        congratulations: 'Congratulations! You completed the game in',
+        autoPlayNotImplemented: 'Auto play function is not implemented yet'
+    }
+};
+
+function switchLanguage() {
+    isRussian = !isRussian;
+    currentLang.textContent = isRussian ? 'RU' : 'EN';
+    updateTexts();
 }
-if (autoBtn) {
-    autoBtn.addEventListener('click', autoPlay);
+
+function updateTexts() {
+    const lang = isRussian ? 'ru' : 'en';
+    startBtn.textContent = translations[lang].start;
+    resetBtn.textContent = translations[lang].reset;
+    autoBtn.textContent = translations[lang].autoPlay;
+    document.getElementById('hamster-kombat-link').textContent = translations[lang].playHamsterKombat;
 }
+
+languageSwitcher.addEventListener('click', switchLanguage);
 
 function createBoard() {
     gameBoard.innerHTML = '';
@@ -216,7 +248,8 @@ function updateTimer() {
 function endGame() {
     clearInterval(timerInterval);
     gameStarted = false;
-    alert(`Поздравляем! Вы прошли игру за ${timer.textContent}`);
+    const lang = isRussian ? 'ru' : 'en';
+    alert(`${translations[lang].congratulations} ${timer.textContent}`);
     resetGame();
 }
 
@@ -231,13 +264,16 @@ function resetGame() {
 }
 
 function autoPlay() {
-    alert('Функция автоматической игры пока не реализована');
+    const lang = isRussian ? 'ru' : 'en';
+    alert(translations[lang].autoPlayNotImplemented);
 }
 
 createBoard();
-startOverlay.addEventListener('click', startGame);
+startBtn.addEventListener('click', startGame);
+resetBtn.addEventListener('click', resetGame);
+autoBtn.addEventListener('click', autoPlay);
 gameBoard.addEventListener('touchstart', (e) => {
-    if (e.target === startOverlay) {
+    if (e.target === startBtn) {
         startGame();
     }
 }, { passive: false });
@@ -260,3 +296,6 @@ window.addEventListener('resize', () => {
 
 // Вызов обработчика изменения размера при загрузке страницы
 window.dispatchEvent(new Event('resize'));
+
+// Вызываем updateTexts() при загрузке страницы
+updateTexts();
