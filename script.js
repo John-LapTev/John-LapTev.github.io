@@ -130,6 +130,20 @@ function updateBlocks() {
     }
 }
 
+function preventDefault(e) {
+    e.preventDefault();
+}
+
+function disableScroll() {
+    document.body.addEventListener('touchmove', preventDefault, { passive: false });
+    gameBoard.addEventListener('touchmove', preventDefault, { passive: false });
+}
+
+function enableScroll() {
+    document.body.removeEventListener('touchmove', preventDefault);
+    gameBoard.removeEventListener('touchmove', preventDefault);
+}
+
 function startDrag(e) {
     if (!gameStarted) return;
     e.preventDefault();
@@ -141,6 +155,8 @@ function startDrag(e) {
     const startTop = parseFloat(selectedBlock.style.top);
     const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
     const cellSize = gameBoard.clientWidth / 6;
+
+    disableScroll();
 
     function drag(e) {
         e.preventDefault();
@@ -167,6 +183,7 @@ function startDrag(e) {
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', drag);
         document.removeEventListener('touchend', endDrag);
+        enableScroll();
         updateBoardState();
         checkWin();
     }
@@ -179,7 +196,6 @@ function startDrag(e) {
 
 function canMove(block, newLeft, newTop) {
     const cellSize = gameBoard.clientWidth / 6;
-    const blockType = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
     const newCol = Math.round(newLeft / cellSize);
     const newRow = Math.round(newTop / cellSize);
     const width = parseInt(block.dataset.width);
@@ -281,13 +297,6 @@ autoBtn.addEventListener('click', autoPlay);
 gameBoard.addEventListener('touchstart', (e) => {
     if (e.target === startBtn) {
         startGame();
-    }
-}, { passive: false });
-
-// Предотвращение прокрутки страницы при перетаскивании блоков
-document.body.addEventListener('touchmove', (e) => {
-    if (gameStarted) {
-        e.preventDefault();
     }
 }, { passive: false });
 
