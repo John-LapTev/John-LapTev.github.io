@@ -19,12 +19,12 @@ const GREEN = 'G';
 const KEY = 'K';
 
 const initialBoard = [
-    [RED, GREEN, GREEN, EMPTY, GREEN, GREEN],
-    [RED, EMPTY, RED, GREEN, GREEN, RED],
-    [KEY, KEY, RED, RED, EMPTY, RED],
-    [EMPTY, RED, EMPTY, RED, GREEN, GREEN],
-    [EMPTY, RED, EMPTY, RED, RED, EMPTY],
-    [EMPTY, RED, GREEN, GREEN, RED, EMPTY]
+    [GREEN, GREEN, RED, GREEN, GREEN, EMPTY],
+    [RED, RED, RED, EMPTY, RED, RED],
+    [RED, RED, KEY, KEY, RED, RED],
+    [EMPTY, EMPTY, EMPTY, RED, EMPTY, RED],
+    [EMPTY, EMPTY, EMPTY, RED, GREEN, GREEN],
+    [EMPTY, EMPTY, EMPTY, RED, EMPTY, EMPTY]
 ];
 
 let currentBoard = JSON.parse(JSON.stringify(initialBoard));
