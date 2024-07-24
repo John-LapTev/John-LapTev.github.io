@@ -87,14 +87,15 @@ body {
 
 .lock-icon {
     position: absolute;
-    top: calc(50.5% - 50px);
-    left: calc(93.8% - 12px);
+    top: calc(53.5% - 50px);
+    left: calc(96% - 12px);
     transform: translate(-50%, -50%);
     font-size: 24px;
     z-index: 1;
     border-radius: 15px;
     /* animation: pulse 1s infinite; */
 }
+
 .block {
   position: absolute;
   border-radius: 10px;
