@@ -613,7 +613,7 @@ function updateThemeColors() {
 }
 
 function showHint() {
-    hintText.textContent = isRussian ? 'Подсказка: Передвигайте блоки, чтобы освободить путь для жёлтого блока!' : 'Hint: Move the blocks to clear the path for the yellow block!';
+    hintText.textContent = isRussian ? 'Красные блоки: двигаются только вверх и вниз  |  Зелёные и Ключ: влево и вправо.' : 'Red blocks: move up and down only | Green and Key: left and right.';
     hintModal.classList.remove('hidden');
 }
 
