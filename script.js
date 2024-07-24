@@ -476,7 +476,7 @@ function updateTexts() {
         confirm: 'Подтвердить',
         player: 'Игрок',
         congrats: 'Поздравляем! Вы прошли уровень за',
-        hintText: 'Подсказка: Передвигайте блоки, чтобы освободить путь для жёлтого блока!',
+        hintText: 'Красные блоки: двигаются только вверх и вниз  |  Зелёные и Ключ: влево и вправо.',
         selectLevel: 'Выберите уровень',
         autoSolve: 'Авто решение',
         stats: 'Статистика',
@@ -872,7 +872,7 @@ function showTutorial() {
 function showNextTutorialStep() {
     const tutorialSteps = [
         {
-            text: isRussian ? 'Добро пожаловать в UnBlock Me! Цель игры - освободить желтый блок, передвигая другие блоки.' : 'Welcome to UnBlock Me! The goal is to free the yellow block by moving other blocks.',
+            text: isRussian ? 'Добро пожаловать в UnBlock Me! Цель игры - вставить ключ в замок, передвигая другие блоки что бы освободить путь.' : 'Welcome to UnBlock Me! The goal of the game is to insert the key into the lock by moving other blocks to clear the way.',
             highlight: '#game-board'
         },
         {
