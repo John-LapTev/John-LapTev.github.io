@@ -26,7 +26,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 40vh;
 }
 
 .game-container {
@@ -38,6 +38,7 @@ body {
   padding-right: 30px;
   padding-bottom: 20px;
   padding-left: 30px;
+  margin-bottom: 65px;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
@@ -151,7 +152,7 @@ body {
 
 #mobile-menu {
   position: fixed;
-  bottom: 20px;
+  bottom: 45px;
   left: 1%;
   width: 98%;
   background-color: var(--modal-bg);
@@ -172,7 +173,7 @@ body {
   align-items: center;
   color: var(--text-color);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 12px;
   transition: transform 0.2s;
 }
 
