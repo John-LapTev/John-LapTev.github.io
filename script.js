@@ -59,6 +59,12 @@ let completedSideTasks = [];
 let coins = 0;
 let tutorialStep = 0;
 
+// Переменные для предотвращения закрытия приложения в телеграмм
+let touchStartY;
+let touchStartX;
+let isTouchingGameBoard = false;
+let isMovingBlock = false;
+
 const EMPTY = 'E';
 const RED = 'R';
 const GREEN = 'G';
@@ -118,7 +124,55 @@ function createBoard() {
     gameBoard.appendChild(lockIcon);
     
     updateBlocks();
+
+    // Добавьте эти новые обработчики событий в конец функции
+    gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
+    gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
+    gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
+
+// (НАЧАЛО) Новые функции для предотвращения закрытия приложения
+function handleTouchStart(e) {
+    isTouchingGameBoard = true;
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+    isMovingBlock = false;
+}
+
+function handleTouchMove(e) {
+    if (!isTouchingGameBoard) return;
+    
+    const touchCurrentY = e.touches[0].clientY;
+    const touchCurrentX = e.touches[0].clientX;
+    const deltaY = touchCurrentY - touchStartY;
+    const deltaX = touchCurrentX - touchStartX;
+    
+    // Предотвращаем любое вертикальное движение на игровом поле
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        e.preventDefault();
+        return;
+    }
+    
+    // Если движение преимущественно горизонтальное, позволяем двигать блок
+    if (Math.abs(deltaX) > 5) {
+        isMovingBlock = true;
+    }
+    
+    if (isMovingBlock) {
+        e.preventDefault();
+        // Здесь можно добавить логику для движения блока
+    }
+}
+
+function handleTouchEnd(e) {
+    isTouchingGameBoard = false;
+    if (isMovingBlock) {
+        e.preventDefault();
+        isMovingBlock = false;
+        // Здесь можно добавить логику завершения движения блока
+    }
+}
+// (КОНЕЦ) 
 
 function updateBlocks() {
     const existingBlocks = gameBoard.querySelectorAll('.block');
@@ -177,9 +231,11 @@ function createBlock(row, col, cellSize) {
 }
 
 function startDrag(e) {
-        if (!gameStarted || isAutoPlaying) return;
-        e.preventDefault();
-        selectedBlock = e.target.closest('.block');
+    if (!gameStarted || isAutoPlaying) return;
+    e.preventDefault();
+    selectedBlock = e.target.closest('.block');
+    if (selectedBlock) {
+        isMovingBlock = true;
         const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         const startLeft = parseInt(selectedBlock.style.left);
@@ -190,38 +246,38 @@ function startDrag(e) {
         let lastValidLeft = startLeft;
         let lastValidTop = startTop;
 
-function drag(e) {
-        if (!selectedBlock) return;
-        e.preventDefault();
-        const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        const dx = currentX - startX;
-        const dy = currentY - startY;
-        let newLeft = startLeft, newTop = startTop;
+        function drag(e) {
+            if (!selectedBlock) return;
+            e.preventDefault();
+            const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            const dx = currentX - startX;
+            const dy = currentY - startY;
+            let newLeft = startLeft, newTop = startTop;
 
-        if (isHorizontal) {
-            newLeft = startLeft + dx;
-        } else {
-            newTop = startTop + dy;
-        }
+            if (isHorizontal) {
+                newLeft = startLeft + dx;
+            } else {
+                newTop = startTop + dy;
+            }
 
-        const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
-        if (canMove) {
-            lastValidLeft = snapPosition.left;
-            lastValidTop = snapPosition.top;
-            requestAnimationFrame(() => {
-                if (selectedBlock) {
-                    moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
-                }
-            });
-        } else {
-            requestAnimationFrame(() => {
-                if (selectedBlock) {
-                    moveBlock(selectedBlock, lastValidLeft, lastValidTop);
-                }
-            });
+            const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
+            if (canMove) {
+                lastValidLeft = snapPosition.left;
+                lastValidTop = snapPosition.top;
+                requestAnimationFrame(() => {
+                    if (selectedBlock) {
+                        moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
+                    }
+                });
+            } else {
+                requestAnimationFrame(() => {
+                    if (selectedBlock) {
+                        moveBlock(selectedBlock, lastValidLeft, lastValidTop);
+                    }
+                });
+            }
         }
-    }
 
         function endDrag() {
             if (!selectedBlock) return;
@@ -235,6 +291,7 @@ function drag(e) {
                 endGame();
             }
             selectedBlock = null;
+            isMovingBlock = false;
         }
 
         document.addEventListener('mousemove', drag);
@@ -242,6 +299,7 @@ function drag(e) {
         document.addEventListener('touchmove', drag, { passive: false });
         document.addEventListener('touchend', endDrag);
     }
+}
 
 function canMoveAndSnap(block, newLeft, newTop) {
     const cellSize = gameBoard.clientWidth / 6;
@@ -982,43 +1040,59 @@ function undo() {
     }
 }
 
-// Mobile touch events
-let touchStartX, touchStartY;
+// Mobile touch events update
 
-gameBoard.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-}, { passive: true });
 
-gameBoard.addEventListener('touchmove', (e) => {
-    if (!selectedBlock) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStartX;
-    const dy = touch.clientY - touchStartY;
+function handleTouchStart(e) {
+    isTouchingGameBoard = true;
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+    isMovingBlock = false;
+}
+
+function handleTouchMove(e) {
+    if (!isTouchingGameBoard) return;
     
-    const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
-    let newLeft = parseInt(selectedBlock.style.left);
-    let newTop = parseInt(selectedBlock.style.top);
-
-    if (isHorizontal) {
-        newLeft += dx;
-    } else {
-        newTop += dy;
+    const touchCurrentY = e.touches[0].clientY;
+    const touchCurrentX = e.touches[0].clientX;
+    const deltaY = touchCurrentY - touchStartY;
+    const deltaX = touchCurrentX - touchStartX;
+    
+    // Предотвращаем любое вертикальное движение на игровом поле
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        e.preventDefault();
+        return;
     }
+    
+    // Если движение преимущественно горизонтальное, позволяем двигать блок
+    if (Math.abs(deltaX) > 5 && selectedBlock) {
+        isMovingBlock = true;
+        e.preventDefault();
+        
+        const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
+        let newLeft = parseInt(selectedBlock.style.left);
+        let newTop = parseInt(selectedBlock.style.top);
 
-    const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
-    if (canMove) {
-        moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
+        if (isHorizontal) {
+            newLeft += deltaX;
+        } else {
+            newTop += deltaY;
+        }
+
+        const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
+        if (canMove) {
+            moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
+        }
     }
+    
+    touchStartX = touchCurrentX;
+    touchStartY = touchCurrentY;
+}
 
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-}, { passive: false });
-
-gameBoard.addEventListener('touchend', () => {
-    if (selectedBlock) {
+function handleTouchEnd(e) {
+    isTouchingGameBoard = false;
+    if (isMovingBlock && selectedBlock) {
+        e.preventDefault();
         snapToGrid(selectedBlock);
         updateBoardState();
         moves++;
@@ -1027,12 +1101,19 @@ gameBoard.addEventListener('touchend', () => {
             endGame();
         }
         selectedBlock = null;
+        isMovingBlock = false;
     }
-});
+}
+
+gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
+gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
+gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
 
 // Prevent scrolling when touching the game board
 gameBoard.addEventListener('touchmove', (e) => {
-    e.preventDefault();
+    if (isTouchingGameBoard) {
+        e.preventDefault();
+    }
 }, { passive: false });
 
 // Add this to initialize the game when the window loads
