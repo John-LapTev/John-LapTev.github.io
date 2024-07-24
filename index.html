@@ -1,29 +1,191 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hamster Kombat Mini-Game</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UnBlock Me - HK</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="game-container">
-        <div id="timer">00:00</div>
-        <div id="game-board">
-            <div id="start-overlay">СТАРТ</div>
-        </div>
-        <div id="controls">
-            <button id="reset-btn">СБРОС</button>
-            <button id="auto-btn">АВТО ИГРА</button>
-        </div>
-        <a href="https://t.me/hamstEr_kombat_bot/start?startapp=kentId224312051" id="hamster-kombat-link">Играть в Hamster Kombat</a>
+<div id="coin-counter">
+  <i class="fas fa-coins"></i>
+  <span id="coin-count">0</span>
+</div>
+<div class="game-container">
+  <h1 id="game-title">UnBlock Me - HK</h1>
+  <div id="user-info">Загрузка информации о пользователе...</div>
+  <div id="current-level">Уровень 1</div>
+  <div id="game-board">
+    <div id="exit-indicator">🔒</div>
+    <div id="start-overlay">
+      <button id="start-btn">Начать игру</button>
     </div>
-    <footer>
-        <a href="https://t.me/Hamster_K_JL" target="_blank">Telegram</a> |
-        <a href="https://www.youtube.com/@Cheesez_Crazy" target="_blank">YouTube</a> |
-        <a href="https://boosty.to/jlsd" target="_blank">Boosty</a>
-    </footer>
-    <script src="script.js"></script>
+  </div>
+  <div id="timer">00:00</div>
+  <div id="moves-counter">Ходов: 0</div>
+</div>
+
+<div id="mobile-menu">
+  <a href="#" class="menu-button" id="reset-btn">
+    <i class="fas fa-redo"></i>
+    <span>Сбросить</span>
+  </a>
+  <a href="#" class="menu-button" id="hint-btn">
+    <i class="fas fa-lightbulb"></i>
+    <span>Подсказка</span>
+  </a>
+  <a href="#" class="menu-button" id="level-btn">
+    <i class="fas fa-layer-group"></i>
+    <span>Уровни</span>
+  </a>
+  <a href="#" class="menu-button" id="tasks-btn">
+    <i class="fas fa-tasks"></i>
+    <span>Задания</span>
+  </a>
+  <a href="#" class="hidden" id="auto-solve-btn">
+    <i class="fas fa-magic"></i>
+    <span>Авто решение</span>
+  </a>
+  <a href="#" class="menu-button" id="settings-btn">
+    <i class="fas fa-cog"></i>
+    <span>Настройки</span>
+  </a>
+</div>
+
+<button id="stats-btn" title="Статистика">
+  <i class="fas fa-chart-bar"></i>
+</button>
+
+<div id="username-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Введите ваше имя</h2>
+    <input type="text" id="username-input" placeholder="Ваше имя">
+    <button id="submit-username">Подтвердить</button>
+  </div>
+</div>
+
+<div id="settings-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="settings-title">Настройки</h2>
+    <button id="language-toggle">EN/RU</button>
+    <div id="theme-toggle">
+      <span>Тёмная тема</span>
+      <label id="theme-toggle-switch">
+        <input type="checkbox" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <button id="close-settings">Закрыть</button>
+  </div>
+</div>
+
+<div id="level-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Выберите уровень</h2>
+    <select id="level-select"></select>
+    <button id="confirm-level">Подтвердить</button>
+  </div>
+</div>
+
+<div id="win-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Поздравляем!</h2>
+    <p id="win-message"></p>
+    <button id="next-level-btn">Следующий уровень</button>
+  </div>
+</div>
+
+<div id="hint-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Подсказка</h2>
+    <p id="hint-text"></p>
+    <button id="close-hint">Закрыть</button>
+  </div>
+</div>
+
+<div id="stats-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Статистика</h2>
+    <div class="stats-grid">
+      <div class="stats-item">
+        <div class="stats-label">Всего игр:</div>
+        <div class="stats-value" id="total-games">0</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-label">Лучшее время:</div>
+        <div class="stats-value" id="best-time">N/A</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-label">Среднее кол-во ходов:</div>
+        <div class="stats-value" id="avg-moves">N/A</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-label">Пройдено уровней:</div>
+        <div class="stats-value" id="levels-completed">0</div>
+      </div>
+    </div>
+    <button id="show-leaderboard">Таблица лидеров</button>
+    <button id="close-stats">Закрыть</button>
+  </div>
+</div>
+
+<div id="leaderboard-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Таблица лидеров</h2>
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Место</th>
+          <th>Имя</th>
+          <th>Уровень</th>
+          <th>Время</th>
+          <th>Ходы</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <!-- Leaderboard data will be inserted here -->
+      </tbody>
+    </table>
+    <button id="close-leaderboard">Закрыть</button>
+  </div>
+</div>
+
+<div id="tasks-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Задания</h2>
+    <div class="tab-container">
+      <div class="tab active" data-tab="main">Основные</div>
+      <div class="tab" data-tab="side">Побочные</div>
+    </div>
+    <div class="tab-content active" id="main-tasks">
+      <ul class="task-list" id="main-task-list">
+        <!-- Main tasks will be inserted here -->
+      </ul>
+    </div>
+    <div class="tab-content" id="side-tasks">
+      <ul class="task-list" id="side-task-list">
+        <!-- Side tasks will be inserted here -->
+      </ul>
+    </div>
+    <button id="close-tasks">Закрыть</button>
+  </div>
+</div>
+
+<div id="subscription-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Проверка подписки</h2>
+    <p>Проверяем вашу подписку...</p>
+  </div>
+</div>
+
+<div id="tutorial-modal" class="tutorial-modal hidden">
+  <div class="tutorial-content">
+    <h2>Добро пожаловать в UnBlock Me!</h2>
+    <p id="tutorial-text"></p>
+    <button id="tutorial-next">Далее...</button>
+  </div>
+</div>
+<script src="script.js"></script>
 </body>
 </html>
