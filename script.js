@@ -1121,4 +1121,8 @@ function addRandomLevel() {
 // Don't forget to add the new buttons to your HTML:
 // <button id="new-session-btn">New Session</button>
 // <button id="add-levels-btn">Add Levels</button>
+<<<<<<< HEAD
 // <button id="random-level-btn">Random Level</button>
+=======
+// <button id="random-level-btn">Random Level</button>
+>>>>>>> 25d02aa63788558ec7d274dce97accda17fae2ca
