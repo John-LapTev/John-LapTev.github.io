@@ -96,10 +96,6 @@ let currentBoard = JSON.parse(JSON.stringify(levels[0]));
 function createBoard() {
     gameBoard.innerHTML = '';
     gameBoard.appendChild(startOverlay);
-    const exitIndicator = document.createElement('div');
-    exitIndicator.id = 'exit-indicator';
-    exitIndicator.textContent = '🔒';
-    gameBoard.appendChild(exitIndicator);
     const cellSize = gameBoard.clientWidth / 6;
     for (let i = 0; i < 6; i++) {
         for (let j = 0; j < 6; j++) {
@@ -107,9 +103,20 @@ function createBoard() {
             cell.classList.add('cell');
             cell.style.left = `${j * cellSize}px`;
             cell.style.top = `${i * cellSize}px`;
+            
+            if (i === 2 && j === 5) {
+                cell.classList.add('exit-cell');
+            }
+            
             gameBoard.appendChild(cell);
         }
     }
+    
+    const lockIcon = document.createElement('div');
+    lockIcon.classList.add('lock-icon');
+    lockIcon.textContent = '🔒';
+    gameBoard.appendChild(lockIcon);
+    
     updateBlocks();
 }
 
