@@ -504,7 +504,7 @@ function updateTexts() {
         confirm: 'Confirm',
         player: 'Player',
         congrats: 'Congratulations! You completed the level in',
-        hintText: 'Hint: Move the blocks to clear the path for the yellow block!',
+        hintText: 'Red blocks: move up and down only | Green and Key: left and right.',
         selectLevel: 'Select Level',
         autoSolve: 'Auto Solve',
         stats: 'Statistics',
