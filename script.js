@@ -102,7 +102,15 @@ const levels = [
          [GREEN, GREEN, GREEN, EMPTY, RED, RED],
          [EMPTY, EMPTY, RED, EMPTY, GREEN, GREEN],
          [EMPTY, EMPTY, RED, EMPTY, GREEN, GREEN]
-    ],    
+    ],
+    [
+         [GREEN, GREEN, EMPTY, EMPTY, EMPTY, RED],
+         [EMPTY, GREEN, GREEN, GREEN, RED, RED],
+         [RED, KEY, KEY, EMPTY, RED, EMPTY],
+         [RED, RED, RED, EMPTY, RED, RED],
+         [EMPTY, RED, RED, GREEN, GREEN, RED],
+         [EMPTY, RED, EMPTY, GREEN, GREEN, GREEN]
+    ],        
 ];
 
 let currentBoard = JSON.parse(JSON.stringify(levels[0]));
