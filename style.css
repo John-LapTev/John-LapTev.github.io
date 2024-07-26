@@ -119,8 +119,10 @@ body {
 }
 
 .block.r { background-color: var(--block-red); }
-.block.b { background-color: var(--block-red); }
 .block.g { background-color: var(--block-green); }
+.block.b {
+  background-color: #5353ec;
+}
 .block.k {
   background-color: #ffffff;
   animation: pulse 2s infinite;
