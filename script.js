@@ -67,6 +67,7 @@ let isMovingBlock = false;
 
 const EMPTY = 'E';
 const RED = 'R';
+const RED = 'B';
 const GREEN = 'G';
 const KEY = 'K';
 
@@ -115,8 +116,8 @@ const levels = [
          [EMPTY, GREEN, GREEN, GREEN, EMPTY, RED],
          [EMPTY, EMPTY, RED, RED, RED, RED],
          [KEY, KEY, RED, RED, RED, EMPTY],
-         [EMPTY, EMPTY, RED, RED, GREEN, GREEN],
-         [EMPTY, EMPTY, RED, GREEN, GREEN, RED],
+         [EMPTY, EMPTY, BLUE, RED, GREEN, GREEN],
+         [EMPTY, EMPTY, BLUE, GREEN, GREEN, RED],
          [EMPTY, GREEN, GREEN, EMPTY, EMPTY, RED]
     ],      
 ];
