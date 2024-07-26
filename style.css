@@ -119,7 +119,7 @@ body {
 }
 
 .block.r { background-color: var(--block-red); }
-.block.b { background-color: var(--block-blue); }
+.block.b { background-color: var(--block-red); }
 .block.g { background-color: var(--block-green); }
 .block.k {
   background-color: #ffffff;
