@@ -67,7 +67,7 @@ let isMovingBlock = false;
 
 const EMPTY = 'E';
 const RED = 'R';
-const RED = 'B';
+const BLUE = 'R';
 const GREEN = 'G';
 const KEY = 'K';
 
