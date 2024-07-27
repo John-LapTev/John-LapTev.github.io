@@ -67,6 +67,7 @@ body.light-theme .block {
 }
 
 .cell {
+    /* z-index: 1; */
     position: absolute;
     width: calc(100% / 6);
     height: calc(100% / 6);
@@ -112,6 +113,7 @@ body.light-theme .block {
 }
 
 .block {
+  z-index: 10;	
   position: absolute;
   border-radius: 8px;
   cursor: move;
@@ -256,7 +258,7 @@ body.light-theme .block {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10;
+  z-index: 30;
   border-radius: 15px;
 }
 
@@ -638,4 +640,36 @@ input:checked + .slider:before {
     width: 90%;
     padding: 20px;
   }
+}
+
+.lock {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    z-index: 20;
+    pointer-events: none; /* Делает замочек "прозрачным" для кликов */
+}
+
+.highlight-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: yellow;
+    animation: glow 1s ease-in-out infinite alternate;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    z-index: 15; /* Поместит подсветку поверх блоков, но под замочек */
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 5px yellow;
+    }
+    to {
+        box-shadow: 0 0 20px gold;
+    }
 }
