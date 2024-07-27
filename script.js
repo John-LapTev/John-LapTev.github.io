@@ -63,6 +63,9 @@ let touchStartY;
 let touchStartX;
 let isTouchingGameBoard = false;
 let isMovingBlock = false;
+let touchStartTime;
+const TOUCH_DELAY = 100; // миллисекунды
+const MOVE_THRESHOLD = 5; // пиксели
 
 const EMPTY = 'E';
 const RED = 'R';
@@ -155,39 +158,73 @@ function createBoard() {
 }
 
 function handleTouchStart(e) {
+    if (!gameStarted) return;
     isTouchingGameBoard = true;
     touchStartY = e.touches[0].clientY;
     touchStartX = e.touches[0].clientX;
+    touchStartTime = Date.now();
     isMovingBlock = false;
+
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    selectedBlock = element.closest('.block');
+    
+    if (selectedBlock) {
+        selectedBlock.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.5)';
+    }
 }
 
 function handleTouchMove(e) {
-    if (!isTouchingGameBoard) return;
+    if (!isTouchingGameBoard || !gameStarted) return;
     
     const touchCurrentY = e.touches[0].clientY;
     const touchCurrentX = e.touches[0].clientX;
     const deltaY = touchCurrentY - touchStartY;
     const deltaX = touchCurrentX - touchStartX;
+    const touchDuration = Date.now() - touchStartTime;
     
-    if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        e.preventDefault();
-        return;
-    }
-    
-    if (Math.abs(deltaX) > 5) {
+    if (!isMovingBlock && (Math.abs(deltaY) > MOVE_THRESHOLD || Math.abs(deltaX) > MOVE_THRESHOLD) && touchDuration > TOUCH_DELAY) {
         isMovingBlock = true;
+        e.preventDefault();
     }
     
-    if (isMovingBlock) {
+    if (isMovingBlock && selectedBlock) {
         e.preventDefault();
+        moveSelectedBlock(deltaX, deltaY);
     }
 }
 
 function handleTouchEnd(e) {
     isTouchingGameBoard = false;
-    if (isMovingBlock) {
+    if (isMovingBlock && selectedBlock) {
         e.preventDefault();
-        isMovingBlock = false;
+        snapToGrid(selectedBlock);
+        updateBoardState();
+        moves++;
+        updateMovesCounter();
+        if (checkWin()) {
+            endGame();
+        }
+    }
+    if (selectedBlock) {
+        selectedBlock.style.boxShadow = '';
+    }
+    selectedBlock = null;
+    isMovingBlock = false;
+}
+
+function moveSelectedBlock(deltaX, deltaY) {
+    const blockType = selectedBlock.dataset.type;
+    const isHorizontal = blockType === GREEN || blockType === KEY || (blockType === BLUE && selectedBlock.dataset.width > selectedBlock.dataset.height);
+    const isVertical = blockType === RED || (blockType === BLUE && selectedBlock.dataset.height > selectedBlock.dataset.width);
+    const isOmnidirectional = blockType === BLUE && selectedBlock.dataset.width === selectedBlock.dataset.height;
+
+    let newLeft = parseInt(selectedBlock.style.left) + (isHorizontal || isOmnidirectional ? deltaX : 0);
+    let newTop = parseInt(selectedBlock.style.top) + (isVertical || isOmnidirectional ? deltaY : 0);
+
+    const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
+    if (canMove) {
+        moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
     }
 }
 
@@ -329,6 +366,8 @@ function startDrag(e) {
             document.removeEventListener('touchend', endDrag);
             snapToGrid(selectedBlock);
             updateBoardState();
+            moves++;
+            updateMovesCounter();
             if (checkWin()) {
                 endGame();
             }
@@ -447,6 +486,7 @@ function updateTimer() {
 
 function updateMovesCounter() {
     movesCounter.textContent = isRussian ? `Ходов: ${moves}` : `Moves: ${moves}`;
+    movesCounter.classList.remove('hidden');
 }
 
 function endGame() {
@@ -478,7 +518,7 @@ function endGame() {
 
     updateLeaderboard(finalTime);
     showConfetti();
-    showWinModal(finalTime);
+    showWinModal(finalTime, moves);
     updateTasks();
 }
 
@@ -507,11 +547,11 @@ function showConfetti() {
     }, 3000);
 }
 
-function showWinModal(finalTime) {
+function showWinModal(finalTime, finalMoves) {
     const winMessage = document.getElementById('win-message');
     winMessage.textContent = isRussian ?
-        `Вы прошли уровень за ${finalTime}! Количество ходов: ${moves}` :
-        `You completed the level in ${finalTime}! Number of moves: ${moves}`;
+        `Вы прошли уровень за ${finalTime}! Количество ходов: ${finalMoves}` :
+        `You completed the level in ${finalTime}! Number of moves: ${finalMoves}`;
     winModal.classList.remove('hidden');
 }
 
@@ -580,7 +620,7 @@ function updateTexts() {
         confirm: 'Подтвердить',
         player: 'Игрок',
         congrats: 'Поздравляем! Вы прошли уровень за',
-        hintText: 'Красные блоки: двигаются только вверх и вниз\nЗелёные и Ключ: влево и вправо\nСиние: в зависимости от формы',
+        hintText: 'Горизонтальные блоки: двигаются только влево и вправо\nВертикальные блоки: двигаются только вверх и вниз\nКвадратные блоки: могут двигаться в любом направлении\nКлюч: нужно довести до правого края',
         selectLevel: 'Выберите уровень',
         autoSolve: 'Авто решение',
         stats: 'Статистика',
@@ -608,7 +648,7 @@ function updateTexts() {
         confirm: 'Confirm',
         player: 'Player',
         congrats: 'Congratulations! You completed the level in',
-        hintText: 'Red blocks: move up and down only\nGreen and Key: left and right\nBlue: depends on shape',
+        hintText: 'Horizontal blocks: move left and right only\nVertical blocks: move up and down only\nSquare blocks: can move in any direction\nKey: needs to reach the right edge',
         selectLevel: 'Select Level',
         autoSolve: 'Auto Solve',
         stats: 'Statistics',
@@ -1041,11 +1081,6 @@ function undo() {
     }
 }
 
-// Mobile touch events update
-gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
-gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
-gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
-
 // Prevent scrolling when touching the game board
 gameBoard.addEventListener('touchmove', (e) => {
     if (isTouchingGameBoard) {
@@ -1130,3 +1165,8 @@ function addRandomLevel() {
     levels.push(generateRandomLevel());
     populateLevelSelect();
 }
+
+// Add these event listeners for the new buttons if you decide to add them to your HTML
+// document.getElementById('new-session-btn').addEventListener('click', startNewSession);
+// document.getElementById('add-levels-btn').addEventListener('click', addNewLevels);
+// document.getElementById('random-level-btn').addEventListener('click', addRandomLevel);
