@@ -132,7 +132,7 @@ body {
 /* Стили для красных и зеленых блоков с идентификаторами */
 .block.r[data-number]:not([data-number=""]),
 .block.g[data-number]:not([data-number=""]) {
-  border: 2px solid #ffffff;
+  border: 1px solid #ffffffa3;
 }
 
 /* новые стили для правильного позиционирования блоков */
