@@ -3,6 +3,7 @@
   --text-color: #e0e0e0;
   --block-red: #ff6b6b;
   --block-green: #51cf66;
+  --block-blue: #5353ec;
   --block-yellow: #fcc419;
   --button-bg: #3a86ff;
   --button-hover: #4895ff;
@@ -21,7 +22,6 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   margin: 0;
-  /* padding: 20px; */
   transition: background-color 0.3s, color 0.3s;
   display: flex;
   justify-content: center;
@@ -33,7 +33,6 @@ body {
   max-width: 500px;
   width: 90%;
   background-color: var(--modal-bg);
-  /* padding: 30px; */
   padding-top: 20px;
   padding-right: 30px;
   padding-bottom: 20px;
@@ -98,7 +97,6 @@ body {
     font-size: 24px;
     z-index: 1;
     border-radius: 15px;
-    /* animation: pulse 1s infinite; */
 }
 
 .block {
@@ -120,12 +118,20 @@ body {
 
 .block.r { background-color: var(--block-red); }
 .block.g { background-color: var(--block-green); }
-.block.b {
-  background-color: #5353ec;
-}
+.block.b { background-color: var(--block-blue); }
 .block.k {
   background-color: #ffffff;
   animation: pulse 2s infinite;
+}
+
+/* Новые стили для синих блоков с идентификаторами */
+.block.b.n2 { background-color: #4040ff; }
+.block.b.n3 { background-color: #3030ff; }
+
+/* Стили для красных и зеленых блоков с идентификаторами */
+.block.r[data-number]:not([data-number=""]),
+.block.g[data-number]:not([data-number=""]) {
+  border: 2px solid #ffffff;
 }
 
 @keyframes pulse {
@@ -162,7 +168,6 @@ body {
   border-radius: 15px;
   display: flex;
   justify-content: space-around;
-  /* padding: 15px 0; */
   padding-top: 15px;
   padding-right: 0px;
   padding-bottom: 15px;
@@ -203,7 +208,6 @@ body {
   font-size: 24px;
   font-weight: bold;
   text-align: center;
-  /* margin: 20px 0; */
   transition: color 0.3s;
 }
 
@@ -535,7 +539,6 @@ input:checked + .slider:before {
   left: 0;
   width: 100%;
   height: 100%;
-  /* background-color: rgba(0, 0, 0, 0.8); */
   display: flex;
   justify-content: center;
   align-items: center;
