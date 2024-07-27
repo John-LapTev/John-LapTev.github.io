@@ -59,7 +59,6 @@ let completedSideTasks = [];
 let coins = 0;
 let tutorialStep = 0;
 
-// Переменные для предотвращения закрытия приложения в телеграмм
 let touchStartY;
 let touchStartX;
 let isTouchingGameBoard = false;
@@ -111,15 +110,15 @@ const levels = [
          [RED, RED, RED, EMPTY, RED, RED],
          [EMPTY, RED, RED, GREEN, GREEN, RED],
          [EMPTY, RED, EMPTY, GREEN, GREEN, GREEN]
-    ],    
+    ],
     [
          [EMPTY, GREEN, GREEN, GREEN, EMPTY, RED],
          [EMPTY, EMPTY, RED, RED, RED, RED],
          [KEY, KEY, RED, RED, RED, EMPTY],
-         [EMPTY, EMPTY, BLUE, RED, GREEN, GREEN],
-         [EMPTY, EMPTY, BLUE, GREEN, GREEN, RED],
+         [EMPTY, EMPTY, RED+'2', RED, GREEN, GREEN],
+         [EMPTY, EMPTY, RED+'2', GREEN, GREEN, RED],
          [EMPTY, GREEN, GREEN, EMPTY, EMPTY, RED]
-    ],      
+    ],       
 ];
 
 let currentBoard = JSON.parse(JSON.stringify(levels[0]));
@@ -150,13 +149,11 @@ function createBoard() {
     
     updateBlocks();
 
-    // Добавьте эти новые обработчики событий в конец функции
     gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
     gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
     gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
-// (НАЧАЛО) Новые функции для предотвращения закрытия приложения
 function handleTouchStart(e) {
     isTouchingGameBoard = true;
     touchStartY = e.touches[0].clientY;
@@ -172,20 +169,17 @@ function handleTouchMove(e) {
     const deltaY = touchCurrentY - touchStartY;
     const deltaX = touchCurrentX - touchStartX;
     
-    // Предотвращаем любое вертикальное движение на игровом поле
     if (Math.abs(deltaY) > Math.abs(deltaX)) {
         e.preventDefault();
         return;
     }
     
-    // Если движение преимущественно горизонтальное, позволяем двигать блок
     if (Math.abs(deltaX) > 5) {
         isMovingBlock = true;
     }
     
     if (isMovingBlock) {
         e.preventDefault();
-        // Здесь можно добавить логику для движения блока
     }
 }
 
@@ -194,10 +188,8 @@ function handleTouchEnd(e) {
     if (isMovingBlock) {
         e.preventDefault();
         isMovingBlock = false;
-        // Здесь можно добавить логику завершения движения блока
     }
 }
-// (КОНЕЦ) 
 
 function updateBlocks() {
     const existingBlocks = gameBoard.querySelectorAll('.block');
@@ -215,26 +207,44 @@ function updateBlocks() {
 }
 
 function isPartOfLargerBlock(row, col) {
-    const type = currentBoard[row][col];
+    const currentCell = currentBoard[row][col];
+    const [type, number] = splitTypeAndNumber(currentCell);
+    
     if (type === GREEN || type === KEY) {
-        return col > 0 && currentBoard[row][col-1] === type;
-    } else if (type === RED) {
-        return row > 0 && currentBoard[row-1][col] === type;
+        return col > 0 && isSameBlock(currentBoard[row][col-1], currentCell);
+    } else if (type === RED || type === BLUE) {
+        return row > 0 && isSameBlock(currentBoard[row-1][col], currentCell);
     }
     return false;
 }
 
+function splitTypeAndNumber(cell) {
+    const match = cell.match(/([RGBK])(\d+)?/);
+    return match ? [match[1], match[2] || ''] : [cell, ''];
+}
+
+function isSameBlock(cell1, cell2) {
+    const [type1, number1] = splitTypeAndNumber(cell1);
+    const [type2, number2] = splitTypeAndNumber(cell2);
+    return type1 === type2 && number1 === number2;
+}
+
 function createBlock(row, col, cellSize) {
     const block = document.createElement('div');
-    block.classList.add('block', currentBoard[row][col].toLowerCase());
+    const [type, number] = splitTypeAndNumber(currentBoard[row][col]);
+    block.classList.add('block', type.toLowerCase());
+    if (number) block.classList.add(`n${number}`);
+    
     let width = 1, height = 1;
     
-    if (currentBoard[row][col] === GREEN || currentBoard[row][col] === KEY) {
-        while (col + width < 6 && currentBoard[row][col + width] === currentBoard[row][col]) {
+    if (type === GREEN || type === KEY || (type === BLUE && number)) {
+        while (col + width < 6 && isSameBlock(currentBoard[row][col + width], currentBoard[row][col])) {
             width++;
         }
-    } else if (currentBoard[row][col] === RED) {
-        while (row + height < 6 && currentBoard[row + height][col] === RED) {
+    }
+    
+    if (type === RED || (type === BLUE && (number || width === 1))) {
+        while (row + height < 6 && isSameBlock(currentBoard[row + height][col], currentBoard[row][col])) {
             height++;
         }
     }
@@ -247,9 +257,11 @@ function createBlock(row, col, cellSize) {
     block.dataset.col = col;
     block.dataset.width = width;
     block.dataset.height = height;
+    block.dataset.type = type;
+    block.dataset.number = number;
     block.addEventListener('mousedown', startDrag);
     block.addEventListener('touchstart', startDrag, { passive: false });
-    if (currentBoard[row][col] === KEY) {
+    if (type === KEY) {
         block.innerHTML = '🔑';
     }
     return block;
@@ -265,7 +277,11 @@ function startDrag(e) {
         const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         const startLeft = parseInt(selectedBlock.style.left);
         const startTop = parseInt(selectedBlock.style.top);
-        const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
+        const blockType = selectedBlock.dataset.type;
+        const blockNumber = selectedBlock.dataset.number;
+        const isHorizontal = blockType === GREEN || blockType === KEY || (blockType === BLUE && blockNumber && selectedBlock.dataset.width > 1);
+        const isVertical = blockType === RED || (blockType === BLUE && blockNumber && selectedBlock.dataset.height > 1);
+        const isOmnidirectional = blockType === BLUE && !blockNumber;
         const cellSize = gameBoard.clientWidth / 6;
 
         let lastValidLeft = startLeft;
@@ -280,9 +296,10 @@ function startDrag(e) {
             const dy = currentY - startY;
             let newLeft = startLeft, newTop = startTop;
 
-            if (isHorizontal) {
+            if (isHorizontal || isOmnidirectional) {
                 newLeft = startLeft + dx;
-            } else {
+            }
+            if (isVertical || isOmnidirectional) {
                 newTop = startTop + dy;
             }
 
@@ -334,6 +351,8 @@ function canMoveAndSnap(block, newLeft, newTop) {
     const height = parseInt(block.dataset.height);
     const startRow = parseInt(block.dataset.row);
     const startCol = parseInt(block.dataset.col);
+    const blockType = block.dataset.type;
+    const blockNumber = block.dataset.number;
 
     if (snapRow < 0 || snapRow + height > 6 || snapCol < 0 || snapCol + width > 6) {
         return [false, { left: newLeft, top: newTop }];
@@ -352,8 +371,7 @@ function canMoveAndSnap(block, newLeft, newTop) {
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
                 if (currentBoard[row + i][col + j] !== EMPTY &&
-                    (row + i < startRow || row + i >= startRow + height ||
-                     col + j < startCol || col + j >= startCol + width)) {
+                    !isSameBlock(currentBoard[row + i][col + j], blockType + blockNumber)) {
                     return [false, { left: newLeft, top: newTop }];
                 }
             }
@@ -384,12 +402,14 @@ function updateBoardState() {
     blocks.forEach(block => {
         const col = Math.round((parseInt(block.style.left) - 2) / cellSize);
         const row = Math.round((parseInt(block.style.top) - 2) / cellSize);
-        const type = block.classList.contains('r') ? RED : block.classList.contains('g') ? GREEN : KEY;
+        const type = block.dataset.type;
+        const number = block.dataset.number;
         const width = parseInt(block.dataset.width);
         const height = parseInt(block.dataset.height);
+        const cellValue = number ? type + number : type;
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
-                currentBoard[row + i][col + j] = type;
+                currentBoard[row + i][col + j] = cellValue;
             }
         }
         block.dataset.row = row;
@@ -398,11 +418,12 @@ function updateBoardState() {
 }
 
 function checkWin() {
-    const keyBlock = gameBoard.querySelector('.block.k');
-    const cellSize = gameBoard.clientWidth / 6;
-    const keyCol = Math.round((parseInt(keyBlock.style.left) - 2) / cellSize);
-    const keyWidth = parseInt(keyBlock.dataset.width);
-    return keyCol + keyWidth === 6;
+    const keyBlocks = Array.from(gameBoard.querySelectorAll('.block.k'));
+    return keyBlocks.every(block => {
+        const keyCol = Math.round((parseInt(block.style.left) - 2) / (gameBoard.clientWidth / 6));
+        const keyWidth = parseInt(block.dataset.width);
+        return keyCol + keyWidth === 6;
+    });
 }
 
 function startGame() {
@@ -559,7 +580,7 @@ function updateTexts() {
         confirm: 'Подтвердить',
         player: 'Игрок',
         congrats: 'Поздравляем! Вы прошли уровень за',
-        hintText: 'Красные блоки: двигаются только вверх и вниз  |  Зелёные и Ключ: влево и вправо.',
+        hintText: 'Красные блоки: двигаются только вверх и вниз\nЗелёные и Ключ: влево и вправо\nСиние: в зависимости от формы',
         selectLevel: 'Выберите уровень',
         autoSolve: 'Авто решение',
         stats: 'Статистика',
@@ -587,7 +608,7 @@ function updateTexts() {
         confirm: 'Confirm',
         player: 'Player',
         congrats: 'Congratulations! You completed the level in',
-        hintText: 'Red blocks: move up and down only | Green and Key: left and right.',
+        hintText: 'Red blocks: move up and down only\nGreen and Key: left and right\nBlue: depends on shape',
         selectLevel: 'Select Level',
         autoSolve: 'Auto Solve',
         stats: 'Statistics',
@@ -616,7 +637,6 @@ function updateTexts() {
     submitUsernameBtn.textContent = texts.confirm;
     document.querySelector('#level-modal h2').textContent = texts.selectLevel;
     confirmLevelBtn.textContent = texts.confirm;
-//     document.querySelector('#auto-solve-btn span').textContent = texts.autoSolve;
     statsBtn.title = texts.stats;
     nextLevelBtn.textContent = texts.nextLevel;
     document.getElementById('settings-title').textContent = texts.settings;
@@ -696,7 +716,9 @@ function updateThemeColors() {
 }
 
 function showHint() {
-    hintText.textContent = isRussian ? 'Красные блоки: двигаются только вверх и вниз  |  Зелёные и Ключ: влево и вправо.' : 'Red blocks: move up and down only | Green and Key: left and right.';
+    hintText.textContent = isRussian ? 
+        'Горизонтальные блоки: двигаются только влево и вправо\nВертикальные блоки: двигаются только вверх и вниз\nКвадратные блоки: могут двигаться в любом направлении\nКлюч: нужно довести до правого края' : 
+        'Horizontal blocks: move left and right only\nVertical blocks: move up and down only\nSquare blocks: can move in any direction\nKey: needs to reach the right edge';
     hintModal.classList.remove('hidden');
 }
 
@@ -706,51 +728,6 @@ function hideHint() {
 
 function updateCurrentLevelDisplay() {
     currentLevelDisplay.textContent = isRussian ? `Уровень ${currentLevel}` : `Level ${currentLevel}`;
-}
-
-function autoSolve() {
-    if (!gameStarted || isAutoPlaying) return;
-    isAutoPlaying = true;
-    const solution = [
-        { block: 'k', direction: 'left', steps: 1 },
-        { block: 'r', direction: 'up', steps: 2 },
-        { block: 'g', direction: 'left', steps: 2 },
-        { block: 'k', direction: 'right', steps: 4 }
-    ];
-
-    function executeMove(index) {
-        if (index >= solution.length) {
-            isAutoPlaying = false;
-            return;
-        }
-
-        const move = solution[index];
-        const block = gameBoard.querySelector(`.block.${move.block}`);
-        const cellSize = gameBoard.clientWidth / 6;
-        let newLeft = parseInt(block.style.left);
-        let newTop = parseInt(block.style.top);
-
-        if (move.direction === 'left') newLeft -= cellSize * move.steps;
-        if (move.direction === 'right') newLeft += cellSize * move.steps;
-        if (move.direction === 'up') newTop -= cellSize * move.steps;
-        if (move.direction === 'down') newTop += cellSize * move.steps;
-
-        moveBlock(block, newLeft, newTop);
-        snapToGrid(block);
-        updateBoardState();
-        moves++;
-        updateMovesCounter();
-
-        setTimeout(() => {
-            if (checkWin()) {
-                endGame();
-            } else {
-                executeMove(index + 1);
-            }
-        }, 500);
-    }
-
-    executeMove(0);
 }
 
 function showStats() {
@@ -1012,7 +989,6 @@ languageToggle.addEventListener('click', toggleLanguage);
 themeToggle.addEventListener('change', toggleTheme);
 confirmLevelBtn.addEventListener('click', changeLevel);
 statsBtn.addEventListener('click', showStats);
-autoSolveBtn.addEventListener('click', autoSolve);
 nextLevelBtn.addEventListener('click', nextLevel);
 closeHintBtn.addEventListener('click', hideHint);
 closeStatsBtn.addEventListener('click', hideStats);
@@ -1066,70 +1042,6 @@ function undo() {
 }
 
 // Mobile touch events update
-
-
-function handleTouchStart(e) {
-    isTouchingGameBoard = true;
-    touchStartY = e.touches[0].clientY;
-    touchStartX = e.touches[0].clientX;
-    isMovingBlock = false;
-}
-
-function handleTouchMove(e) {
-    if (!isTouchingGameBoard) return;
-    
-    const touchCurrentY = e.touches[0].clientY;
-    const touchCurrentX = e.touches[0].clientX;
-    const deltaY = touchCurrentY - touchStartY;
-    const deltaX = touchCurrentX - touchStartX;
-    
-    // Предотвращаем любое вертикальное движение на игровом поле
-    if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        e.preventDefault();
-        return;
-    }
-    
-    // Если движение преимущественно горизонтальное, позволяем двигать блок
-    if (Math.abs(deltaX) > 5 && selectedBlock) {
-        isMovingBlock = true;
-        e.preventDefault();
-        
-        const isHorizontal = selectedBlock.classList.contains('g') || selectedBlock.classList.contains('k');
-        let newLeft = parseInt(selectedBlock.style.left);
-        let newTop = parseInt(selectedBlock.style.top);
-
-        if (isHorizontal) {
-            newLeft += deltaX;
-        } else {
-            newTop += deltaY;
-        }
-
-        const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
-        if (canMove) {
-            moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
-        }
-    }
-    
-    touchStartX = touchCurrentX;
-    touchStartY = touchCurrentY;
-}
-
-function handleTouchEnd(e) {
-    isTouchingGameBoard = false;
-    if (isMovingBlock && selectedBlock) {
-        e.preventDefault();
-        snapToGrid(selectedBlock);
-        updateBoardState();
-        moves++;
-        updateMovesCounter();
-        if (checkWin()) {
-            endGame();
-        }
-        selectedBlock = null;
-        isMovingBlock = false;
-    }
-}
-
 gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
 gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
 gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -1218,13 +1130,3 @@ function addRandomLevel() {
     levels.push(generateRandomLevel());
     populateLevelSelect();
 }
-
-// Add these event listeners for the new buttons
-// document.getElementById('new-session-btn').addEventListener('click', startNewSession);
-// document.getElementById('add-levels-btn').addEventListener('click', addNewLevels);
-// document.getElementById('random-level-btn').addEventListener('click', addRandomLevel);
-
-// Don't forget to add the new buttons to your HTML:
-// <button id="new-session-btn">New Session</button>
-// <button id="add-levels-btn">Add Levels</button>
-// <button id="random-level-btn">Random Level</button>
