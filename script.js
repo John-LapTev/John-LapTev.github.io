@@ -135,7 +135,6 @@ function createBoard() {
             cell.style.height = `${100 / BOARD_SIZE}%`;
             cell.style.left = `${j * (100 / BOARD_SIZE)}%`;
             cell.style.top = `${i * (100 / BOARD_SIZE)}%`;
-            cell.style.border = '1px solid #2c2c2c';
             cell.style.boxSizing = 'border-box';
             gameBoard.appendChild(cell);
         }
@@ -629,12 +628,14 @@ function updateThemeColors() {
         document.documentElement.style.setProperty('--modal-bg', '#1a1a1a');
         document.documentElement.style.setProperty('--board-bg', '#1e1e1e');
         document.documentElement.style.setProperty('--cell-border', '#2c2c2c');
+        document.body.classList.remove('light-theme');
     } else {
         document.documentElement.style.setProperty('--bg-color', '#f0f0f0');
         document.documentElement.style.setProperty('--text-color', '#333333');
         document.documentElement.style.setProperty('--modal-bg', '#ffffff');
         document.documentElement.style.setProperty('--board-bg', '#e0e0e0');
-        document.documentElement.style.setProperty('--cell-border', '#cccccc');
+        document.documentElement.style.setProperty('--cell-border', 'rgba(0, 0, 0, 0.1)');
+        document.body.classList.add('light-theme');
     }
 }
 
