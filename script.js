@@ -1,3 +1,4 @@
+// Глобальные переменные
 const gameBoard = document.getElementById('game-board');
 const timer = document.getElementById('timer');
 const movesCounter = document.getElementById('moves-counter');
@@ -18,38 +19,24 @@ const levelModal = document.getElementById('level-modal');
 const levelSelect = document.getElementById('level-select');
 const confirmLevelBtn = document.getElementById('confirm-level');
 const currentLevelDisplay = document.getElementById('current-level');
-const statsBtn = document.getElementById('stats-btn');
-const autoSolveBtn = document.getElementById('auto-solve-btn');
 const winModal = document.getElementById('win-modal');
 const nextLevelBtn = document.getElementById('next-level-btn');
 const hintModal = document.getElementById('hint-modal');
 const hintText = document.getElementById('hint-text');
 const closeHintBtn = document.getElementById('close-hint');
-const statsModal = document.getElementById('stats-modal');
-const closeStatsBtn = document.getElementById('close-stats');
-const showLeaderboardBtn = document.getElementById('show-leaderboard');
-const leaderboardModal = document.getElementById('leaderboard-modal');
-const closeLeaderboardBtn = document.getElementById('close-leaderboard');
-const leaderboardBody = document.getElementById('leaderboard-body');
 const tasksBtn = document.getElementById('tasks-btn');
 const tasksModal = document.getElementById('tasks-modal');
 const closeTasksBtn = document.getElementById('close-tasks');
 const mainTaskList = document.getElementById('main-task-list');
 const sideTaskList = document.getElementById('side-task-list');
-const subscriptionModal = document.getElementById('subscription-modal');
 const coinCounter = document.getElementById('coin-counter');
 const coinCount = document.getElementById('coin-count');
-const tutorialModal = document.getElementById('tutorial-modal');
-const tutorialText = document.getElementById('tutorial-text');
-const tutorialNextBtn = document.getElementById('tutorial-next');
 
 let startTime;
 let timerInterval;
 let gameStarted = false;
 let selectedBlock = null;
 let isRussian = true;
-let isAutoPlaying = false;
-let moveHistory = [];
 let currentLevel = 1;
 let currentUser = null;
 let isDarkTheme = true;
@@ -57,15 +44,18 @@ let moves = 0;
 let completedLevels = [];
 let completedSideTasks = [];
 let coins = 0;
-let tutorialStep = 0;
 
-let touchStartY;
-let touchStartX;
-let isTouchingGameBoard = false;
-let isMovingBlock = false;
-let touchStartTime;
-const TOUCH_DELAY = 100; // миллисекунды
-const MOVE_THRESHOLD = 5; // пиксели
+const CELL_SIZE = 60; // Размер ячейки в пикселях
+const BOARD_SIZE = 6; // Размер игрового поля (6x6)
+
+const statsBtn = document.getElementById('stats-btn');
+const statsModal = document.getElementById('stats-modal');
+const closeStatsBtn = document.getElementById('close-stats');
+
+const showLeaderboardBtn = document.getElementById('show-leaderboard');
+const leaderboardModal = document.getElementById('leaderboard-modal');
+const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+const leaderboardBody = document.getElementById('leaderboard-body');
 
 const EMPTY = 'E';
 const RED = 'R';
@@ -73,6 +63,7 @@ const BLUE = 'B';
 const GREEN = 'G';
 const KEY = 'K';
 
+// Уровни игры
 const levels = [
     [
         [EMPTY, RED, EMPTY, RED, GREEN, GREEN],
@@ -126,123 +117,52 @@ const levels = [
 
 let currentBoard = JSON.parse(JSON.stringify(levels[0]));
 
+// Создание игрового поля
 function createBoard() {
     gameBoard.innerHTML = '';
+    gameBoard.style.width = '100%';
+    gameBoard.style.aspectRatio = '1 / 1';
+    gameBoard.style.position = 'relative';
     gameBoard.appendChild(startOverlay);
-    const cellSize = gameBoard.clientWidth / 6;
-    for (let i = 0; i < 6; i++) {
-        for (let j = 0; j < 6; j++) {
+    
+    // Создание сетки
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
             const cell = document.createElement('div');
             cell.classList.add('cell');
-            cell.style.left = `${j * cellSize}px`;
-            cell.style.top = `${i * cellSize}px`;
-            
-            if (i === 2 && j === 5) {
-                cell.classList.add('exit-cell');
-            }
-            
+            cell.style.position = 'absolute';
+            cell.style.width = `${100 / BOARD_SIZE}%`;
+            cell.style.height = `${100 / BOARD_SIZE}%`;
+            cell.style.left = `${j * (100 / BOARD_SIZE)}%`;
+            cell.style.top = `${i * (100 / BOARD_SIZE)}%`;
+            cell.style.border = '1px solid #2c2c2c';
+            cell.style.boxSizing = 'border-box';
             gameBoard.appendChild(cell);
         }
     }
     
-    const lockIcon = document.createElement('div');
-    lockIcon.classList.add('lock-icon');
-    lockIcon.textContent = '🔒';
-    gameBoard.appendChild(lockIcon);
-    
     updateBlocks();
-
-    gameBoard.addEventListener('touchstart', handleTouchStart, { passive: false });
-    gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
-    gameBoard.addEventListener('touchend', handleTouchEnd, { passive: false });
 }
 
-function handleTouchStart(e) {
-    if (!gameStarted) return;
-    isTouchingGameBoard = true;
-    touchStartY = e.touches[0].clientY;
-    touchStartX = e.touches[0].clientX;
-    touchStartTime = Date.now();
-    isMovingBlock = false;
-
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    selectedBlock = element.closest('.block');
-    
-    if (selectedBlock) {
-        selectedBlock.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.5)';
-    }
-}
-
-function handleTouchMove(e) {
-    if (!isTouchingGameBoard || !gameStarted) return;
-    
-    const touchCurrentY = e.touches[0].clientY;
-    const touchCurrentX = e.touches[0].clientX;
-    const deltaY = touchCurrentY - touchStartY;
-    const deltaX = touchCurrentX - touchStartX;
-    const touchDuration = Date.now() - touchStartTime;
-    
-    if (!isMovingBlock && (Math.abs(deltaY) > MOVE_THRESHOLD || Math.abs(deltaX) > MOVE_THRESHOLD) && touchDuration > TOUCH_DELAY) {
-        isMovingBlock = true;
-        e.preventDefault();
-    }
-    
-    if (isMovingBlock && selectedBlock) {
-        e.preventDefault();
-        moveSelectedBlock(deltaX, deltaY);
-    }
-}
-
-function handleTouchEnd(e) {
-    isTouchingGameBoard = false;
-    if (isMovingBlock && selectedBlock) {
-        e.preventDefault();
-        snapToGrid(selectedBlock);
-        updateBoardState();
-        moves++;
-        updateMovesCounter();
-        if (checkWin()) {
-            endGame();
-        }
-    }
-    if (selectedBlock) {
-        selectedBlock.style.boxShadow = '';
-    }
-    selectedBlock = null;
-    isMovingBlock = false;
-}
-
-function moveSelectedBlock(deltaX, deltaY) {
-    const blockType = selectedBlock.dataset.type;
-    const isHorizontal = blockType === GREEN || blockType === KEY || (blockType === BLUE && selectedBlock.dataset.width > selectedBlock.dataset.height);
-    const isVertical = blockType === RED || (blockType === BLUE && selectedBlock.dataset.height > selectedBlock.dataset.width);
-    const isOmnidirectional = blockType === BLUE && selectedBlock.dataset.width === selectedBlock.dataset.height;
-
-    let newLeft = parseInt(selectedBlock.style.left) + (isHorizontal || isOmnidirectional ? deltaX : 0);
-    let newTop = parseInt(selectedBlock.style.top) + (isVertical || isOmnidirectional ? deltaY : 0);
-
-    const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
-    if (canMove) {
-        moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
-    }
-}
-
+// Обновление блоков на поле
 function updateBlocks() {
     const existingBlocks = gameBoard.querySelectorAll('.block');
     existingBlocks.forEach(block => block.remove());
 
-    const cellSize = gameBoard.clientWidth / 6;
-    for (let i = 0; i < 6; i++) {
-        for (let j = 0; j < 6; j++) {
+    let blockId = 1; // Уникальный идентификатор для каждого блока
+
+    for (let i = 0; i < BOARD_SIZE; i++) {
+        for (let j = 0; j < BOARD_SIZE; j++) {
             if (currentBoard[i][j] !== EMPTY && !isPartOfLargerBlock(i, j)) {
-                const block = createBlock(i, j, cellSize);
+                const block = createBlock(i, j, blockId);
                 gameBoard.appendChild(block);
+                blockId++;
             }
         }
     }
 }
 
+// Проверка, является ли ячейка частью большего блока
 function isPartOfLargerBlock(row, col) {
     const currentCell = currentBoard[row][col];
     const [type, number] = splitTypeAndNumber(currentCell);
@@ -255,18 +175,21 @@ function isPartOfLargerBlock(row, col) {
     return false;
 }
 
+// Разделение типа и номера блока
 function splitTypeAndNumber(cell) {
     const match = cell.match(/([RGBK])(\d+)?/);
     return match ? [match[1], match[2] || ''] : [cell, ''];
 }
 
+// Проверка, являются ли две ячейки частью одного блока
 function isSameBlock(cell1, cell2) {
     const [type1, number1] = splitTypeAndNumber(cell1);
     const [type2, number2] = splitTypeAndNumber(cell2);
     return type1 === type2 && number1 === number2;
 }
 
-function createBlock(row, col, cellSize) {
+// Создание блока
+function createBlock(row, col, blockId) {
     const block = document.createElement('div');
     const [type, number] = splitTypeAndNumber(currentBoard[row][col]);
     block.classList.add('block', type.toLowerCase());
@@ -274,28 +197,32 @@ function createBlock(row, col, cellSize) {
     
     let width = 1, height = 1;
     
+    // Определение размеров блока
     if (type === GREEN || type === KEY || (type === BLUE && number)) {
-        while (col + width < 6 && isSameBlock(currentBoard[row][col + width], currentBoard[row][col])) {
+        while (col + width < BOARD_SIZE && isSameBlock(currentBoard[row][col + width], currentBoard[row][col])) {
             width++;
         }
     }
     
     if (type === RED || (type === BLUE && (number || width === 1))) {
-        while (row + height < 6 && isSameBlock(currentBoard[row + height][col], currentBoard[row][col])) {
+        while (row + height < BOARD_SIZE && isSameBlock(currentBoard[row + height][col], currentBoard[row][col])) {
             height++;
         }
     }
     
-    block.style.width = `${width * cellSize - 4}px`;
-    block.style.height = `${height * cellSize - 4}px`;
-    block.style.left = `${col * cellSize + 2}px`;
-    block.style.top = `${row * cellSize + 2}px`;
+    const cellSize = 100 / BOARD_SIZE;
+    block.style.width = `${width * cellSize - (4 / BOARD_SIZE)}%`;
+    block.style.height = `${height * cellSize - (4 / BOARD_SIZE)}%`;
+    
     block.dataset.row = row;
     block.dataset.col = col;
     block.dataset.width = width;
     block.dataset.height = height;
     block.dataset.type = type;
-    block.dataset.number = number;
+    block.dataset.number = number || blockId;
+    
+    updateBlockPosition(block, col, row);
+    
     block.addEventListener('mousedown', startDrag);
     block.addEventListener('touchstart', startDrag, { passive: false });
     if (type === KEY) {
@@ -304,57 +231,39 @@ function createBlock(row, col, cellSize) {
     return block;
 }
 
+// Начало перетаскивания блока
 function startDrag(e) {
-    if (!gameStarted || isAutoPlaying) return;
+    if (!gameStarted) return;
     e.preventDefault();
     selectedBlock = e.target.closest('.block');
     if (selectedBlock) {
-        isMovingBlock = true;
         const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        const startLeft = parseInt(selectedBlock.style.left);
-        const startTop = parseInt(selectedBlock.style.top);
-        const blockType = selectedBlock.dataset.type;
-        const blockNumber = selectedBlock.dataset.number;
-        const isHorizontal = blockType === GREEN || blockType === KEY || (blockType === BLUE && blockNumber && selectedBlock.dataset.width > 1);
-        const isVertical = blockType === RED || (blockType === BLUE && blockNumber && selectedBlock.dataset.height > 1);
-        const isOmnidirectional = blockType === BLUE && !blockNumber;
-        const cellSize = gameBoard.clientWidth / 6;
-
-        let lastValidLeft = startLeft;
-        let lastValidTop = startTop;
+        const startCol = parseInt(selectedBlock.dataset.col);
+        const startRow = parseInt(selectedBlock.dataset.row);
 
         function drag(e) {
             if (!selectedBlock) return;
             e.preventDefault();
             const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
             const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-            const dx = currentX - startX;
-            const dy = currentY - startY;
-            let newLeft = startLeft, newTop = startTop;
+            const dx = Math.round((currentX - startX) / CELL_SIZE);
+            const dy = Math.round((currentY - startY) / CELL_SIZE);
+            
+            const blockType = selectedBlock.dataset.type;
+            let newCol = startCol;
+            let newRow = startRow;
 
-            if (isHorizontal || isOmnidirectional) {
-                newLeft = startLeft + dx;
+            if (blockType === GREEN || blockType === KEY || blockType === BLUE) {
+                newCol = startCol + dx;
             }
-            if (isVertical || isOmnidirectional) {
-                newTop = startTop + dy;
+            if (blockType === RED || blockType === BLUE) {
+                newRow = startRow + dy;
             }
 
-            const [canMove, snapPosition] = canMoveAndSnap(selectedBlock, newLeft, newTop);
-            if (canMove) {
-                lastValidLeft = snapPosition.left;
-                lastValidTop = snapPosition.top;
-                requestAnimationFrame(() => {
-                    if (selectedBlock) {
-                        moveBlock(selectedBlock, snapPosition.left, snapPosition.top);
-                    }
-                });
-            } else {
-                requestAnimationFrame(() => {
-                    if (selectedBlock) {
-                        moveBlock(selectedBlock, lastValidLeft, lastValidTop);
-                    }
-                });
+            if (canMoveTo(selectedBlock, newCol, newRow)) {
+                updateBlockPosition(selectedBlock, newCol, newRow);
+                updateBoardState();
             }
         }
 
@@ -364,15 +273,17 @@ function startDrag(e) {
             document.removeEventListener('mouseup', endDrag);
             document.removeEventListener('touchmove', drag);
             document.removeEventListener('touchend', endDrag);
-            snapToGrid(selectedBlock);
-            updateBoardState();
-            moves++;
-            updateMovesCounter();
-            if (checkWin()) {
-                endGame();
+            
+            const endCol = parseInt(selectedBlock.dataset.col);
+            const endRow = parseInt(selectedBlock.dataset.row);
+            if (endCol !== startCol || endRow !== startRow) {
+                moves++;
+                updateMovesCounter();
+                if (checkWin()) {
+                    endGame();
+                }
             }
             selectedBlock = null;
-            isMovingBlock = false;
         }
 
         document.addEventListener('mousemove', drag);
@@ -382,99 +293,101 @@ function startDrag(e) {
     }
 }
 
-function canMoveAndSnap(block, newLeft, newTop) {
-    const cellSize = gameBoard.clientWidth / 6;
-    const snapCol = Math.round(newLeft / cellSize);
-    const snapRow = Math.round(newTop / cellSize);
+// Проверка возможности перемещения блока
+function canMoveTo(block, newCol, newRow) {
     const width = parseInt(block.dataset.width);
     const height = parseInt(block.dataset.height);
-    const startRow = parseInt(block.dataset.row);
-    const startCol = parseInt(block.dataset.col);
     const blockType = block.dataset.type;
     const blockNumber = block.dataset.number;
+    const oldCol = parseInt(block.dataset.col);
+    const oldRow = parseInt(block.dataset.row);
 
-    if (snapRow < 0 || snapRow + height > 6 || snapCol < 0 || snapCol + width > 6) {
-        return [false, { left: newLeft, top: newTop }];
+    // Проверка на выход за пределы доски
+    if (newCol < 0 || newCol + width > BOARD_SIZE || newRow < 0 || newRow + height > BOARD_SIZE) {
+        return false;
     }
 
-    const rowStep = snapRow > startRow ? 1 : (snapRow < startRow ? -1 : 0);
-    const colStep = snapCol > startCol ? 1 : (snapCol < startCol ? -1 : 0);
+    // Проверка пути движения
+    const colStep = Math.sign(newCol - oldCol);
+    const rowStep = Math.sign(newRow - oldRow);
+    let currentCol = oldCol;
+    let currentRow = oldRow;
 
-    let row = startRow;
-    let col = startCol;
-
-    while (row !== snapRow || col !== snapCol) {
-        row += rowStep;
-        col += colStep;
+    while (currentCol !== newCol || currentRow !== newRow) {
+        if (colStep !== 0) currentCol += colStep;
+        if (rowStep !== 0) currentRow += rowStep;
 
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
-                if (currentBoard[row + i][col + j] !== EMPTY &&
-                    !isSameBlock(currentBoard[row + i][col + j], blockType + blockNumber)) {
-                    return [false, { left: newLeft, top: newTop }];
+                const checkRow = currentRow + i;
+                const checkCol = currentCol + j;
+                if (checkRow < 0 || checkRow >= BOARD_SIZE || checkCol < 0 || checkCol >= BOARD_SIZE) {
+                    return false; // Выход за границы поля
+                }
+                const cellContent = currentBoard[checkRow][checkCol];
+                if (cellContent !== EMPTY && cellContent !== blockType + blockNumber) {
+                    return false; // Столкновение с другим блоком
                 }
             }
         }
     }
 
-    return [true, { left: snapCol * cellSize + 2, top: snapRow * cellSize + 2 }];
+    return true; // Движение возможно
 }
 
-function moveBlock(block, newLeft, newTop) {
-    block.style.left = `${newLeft}px`;
-    block.style.top = `${newTop}px`;
+// Обновление позиции блока
+function updateBlockPosition(block, col, row) {
+    const cellSize = 100 / BOARD_SIZE; // BOARD_SIZE должен быть равен 6
+    block.style.left = `${col * cellSize}%`;
+    block.style.top = `${row * cellSize}%`;
+    block.dataset.col = col;
+    block.dataset.row = row;
 }
 
-function snapToGrid(block) {
-    const cellSize = gameBoard.clientWidth / 6;
-    const left = parseInt(block.style.left);
-    const top = parseInt(block.style.top);
-    const snapLeft = Math.round(left / cellSize) * cellSize + 2;
-    const snapTop = Math.round(top / cellSize) * cellSize + 2;
-    moveBlock(block, snapLeft, snapTop);
-}
-
+// Обновление состояния игрового поля
 function updateBoardState() {
-    currentBoard = Array(6).fill().map(() => Array(6).fill(EMPTY));
+    currentBoard = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
     const blocks = gameBoard.querySelectorAll('.block');
-    const cellSize = gameBoard.clientWidth / 6;
     blocks.forEach(block => {
-        const col = Math.round((parseInt(block.style.left) - 2) / cellSize);
-        const row = Math.round((parseInt(block.style.top) - 2) / cellSize);
+        const col = parseInt(block.dataset.col);
+        const row = parseInt(block.dataset.row);
         const type = block.dataset.type;
         const number = block.dataset.number;
         const width = parseInt(block.dataset.width);
         const height = parseInt(block.dataset.height);
-        const cellValue = number ? type + number : type;
+        const cellValue = type + number;
+        
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
-                currentBoard[row + i][col + j] = cellValue;
+                if (row + i < BOARD_SIZE && col + j < BOARD_SIZE) {
+                    currentBoard[row + i][col + j] = cellValue;
+                }
             }
         }
-        block.dataset.row = row;
-        block.dataset.col = col;
     });
 }
 
+// Проверка на выигрыш
 function checkWin() {
     const keyBlocks = Array.from(gameBoard.querySelectorAll('.block.k'));
     return keyBlocks.every(block => {
-        const keyCol = Math.round((parseInt(block.style.left) - 2) / (gameBoard.clientWidth / 6));
+        const keyCol = parseInt(block.dataset.col);
         const keyWidth = parseInt(block.dataset.width);
-        return keyCol + keyWidth === 6;
+        return keyCol + keyWidth === BOARD_SIZE;
     });
 }
 
+// Начало игры
 function startGame() {
     gameStarted = true;
     startTime = Date.now();
-    moveHistory = [];
     moves = 0;
     updateMovesCounter();
     timerInterval = setInterval(updateTimer, 1000);
     startOverlay.classList.add('hidden');
 }
 
+// Обновление таймера
 function updateTimer() {
     const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
@@ -484,15 +397,16 @@ function updateTimer() {
     setTimeout(() => timer.classList.remove('highlight'), 300);
 }
 
+// Обновление счетчика ходов
 function updateMovesCounter() {
     movesCounter.textContent = isRussian ? `Ходов: ${moves}` : `Moves: ${moves}`;
     movesCounter.classList.remove('hidden');
 }
 
+// Завершение игры
 function endGame() {
     clearInterval(timerInterval);
     gameStarted = false;
-    isAutoPlaying = false;
     const finalTime = timer.textContent;
     
     if (!completedLevels.includes(currentLevel)) {
@@ -501,6 +415,14 @@ function endGame() {
         addCoins(5);
     }
     
+    updateStats(finalTime);
+    updateLeaderboard(finalTime); 
+    showWinModal(finalTime, moves);
+    updateTasks();
+}
+
+// Обновление статистики
+function updateStats(finalTime) {
     let totalGames = parseInt(localStorage.getItem('totalGames') || '0') + 1;
     localStorage.setItem('totalGames', totalGames);
 
@@ -515,38 +437,9 @@ function endGame() {
 
     let levelsCompleted = parseInt(localStorage.getItem('levelsCompleted') || '0') + 1;
     localStorage.setItem('levelsCompleted', levelsCompleted);
-
-    updateLeaderboard(finalTime);
-    showConfetti();
-    showWinModal(finalTime, moves);
-    updateTasks();
 }
 
-function showConfetti() {
-    const confettiContainer = document.createElement('div');
-    confettiContainer.style.position = 'fixed';
-    confettiContainer.style.top = '0';
-    confettiContainer.style.left = '0';
-    confettiContainer.style.width = '100%';
-    confettiContainer.style.height = '100%';
-    confettiContainer.style.pointerEvents = 'none';
-    confettiContainer.style.zIndex = '1000';
-    document.body.appendChild(confettiContainer);
-
-    for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = `${Math.random() * 100}%`;
-        confetti.style.animationDelay = `${Math.random() * 3}s`;
-        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-        confettiContainer.appendChild(confetti);
-    }
-
-    setTimeout(() => {
-        confettiContainer.remove();
-    }, 3000);
-}
-
+// Отображение модального окна победы
 function showWinModal(finalTime, finalMoves) {
     const winMessage = document.getElementById('win-message');
     winMessage.textContent = isRussian ?
@@ -555,28 +448,30 @@ function showWinModal(finalTime, finalMoves) {
     winModal.classList.remove('hidden');
 }
 
+// Сброс игры
 function resetGame() {
     clearInterval(timerInterval);
     gameStarted = false;
-    isAutoPlaying = false;
     timer.textContent = '00:00';
     moves = 0;
     updateMovesCounter();
     currentBoard = JSON.parse(JSON.stringify(levels[currentLevel - 1]));
-    moveHistory = [];
     updateBlocks();
     startOverlay.classList.remove('hidden');
     updateCurrentLevelDisplay();
 }
 
+// Отображение модального окна выбора уровня
 function showLevelModal() {
     levelModal.classList.remove('hidden');
 }
 
+// Скрытие модального окна выбора уровня
 function hideLevelModal() {
     levelModal.classList.add('hidden');
 }
 
+// Заполнение выпадающего списка уровней
 function populateLevelSelect() {
     levelSelect.innerHTML = '';
     for (let i = 1; i <= levels.length; i++) {
@@ -588,6 +483,7 @@ function populateLevelSelect() {
     levelSelect.value = currentLevel;
 }
 
+// Смена уровня
 function changeLevel() {
     const selectedLevel = parseInt(levelSelect.value);
     if (selectedLevel !== currentLevel) {
@@ -597,6 +493,7 @@ function changeLevel() {
     hideLevelModal();
 }
 
+// Переключение языка
 function toggleLanguage() {
     isRussian = !isRussian;
     updateTexts();
@@ -606,6 +503,7 @@ function toggleLanguage() {
     updateTasks();
 }
 
+// Обновление текстов интерфейса
 function updateTexts() {
     const texts = isRussian ? {
         title: 'UnBlock Me - HK',
@@ -622,14 +520,8 @@ function updateTexts() {
         congrats: 'Поздравляем! Вы прошли уровень за',
         hintText: 'Горизонтальные блоки: двигаются только влево и вправо\nВертикальные блоки: двигаются только вверх и вниз\nКвадратные блоки: могут двигаться в любом направлении\nКлюч: нужно довести до правого края',
         selectLevel: 'Выберите уровень',
-        autoSolve: 'Авто решение',
         stats: 'Статистика',
         nextLevel: 'Следующий уровень',
-        leaderboard: 'Таблица лидеров',
-        totalGames: 'Всего игр',
-        bestTime: 'Лучшее время',
-        avgMoves: 'Среднее кол-во ходов',
-        levelsCompleted: 'Пройдено уровней',
         tasks: 'Задания',
         mainTasks: 'Основные',
         sideTasks: 'Побочные',
@@ -650,14 +542,8 @@ function updateTexts() {
         congrats: 'Congratulations! You completed the level in',
         hintText: 'Horizontal blocks: move left and right only\nVertical blocks: move up and down only\nSquare blocks: can move in any direction\nKey: needs to reach the right edge',
         selectLevel: 'Select Level',
-        autoSolve: 'Auto Solve',
         stats: 'Statistics',
         nextLevel: 'Next Level',
-        leaderboard: 'Leaderboard',
-        totalGames: 'Total Games',
-        bestTime: 'Best Time',
-        avgMoves: 'Average Moves',
-        levelsCompleted: 'Levels Completed',
         tasks: 'Tasks',
         mainTasks: 'Main',
         sideTasks: 'Side',
@@ -665,6 +551,7 @@ function updateTexts() {
         coins: 'Coins'
     };
 
+    // Обновление текстов элементов интерфейса
     document.getElementById('game-title').textContent = texts.title;
     startBtn.textContent = texts.start;
     document.querySelector('#reset-btn span').textContent = texts.reset;
@@ -677,35 +564,28 @@ function updateTexts() {
     submitUsernameBtn.textContent = texts.confirm;
     document.querySelector('#level-modal h2').textContent = texts.selectLevel;
     confirmLevelBtn.textContent = texts.confirm;
-    statsBtn.title = texts.stats;
     nextLevelBtn.textContent = texts.nextLevel;
     document.getElementById('settings-title').textContent = texts.settings;
-    document.querySelector('#stats-modal h2').textContent = texts.stats;
-    document.getElementById('show-leaderboard').textContent = texts.leaderboard;
-    document.querySelector('#leaderboard-modal h2').textContent = texts.leaderboard;
     document.querySelector('#tasks-btn span').textContent = texts.tasks;
     document.querySelector('#tasks-modal h2').textContent = texts.tasks;
     document.querySelector('.tab[data-tab="main"]').textContent = texts.mainTasks;
     document.querySelector('.tab[data-tab="side"]').textContent = texts.sideTasks;
     coinCounter.title = texts.coins;
-    
-    // Update stats labels
-    document.querySelector('.stats-item:nth-child(1) .stats-label').textContent = texts.totalGames + ':';
-    document.querySelector('.stats-item:nth-child(2) .stats-label').textContent = texts.bestTime + ':';
-    document.querySelector('.stats-item:nth-child(3) .stats-label').textContent = texts.avgMoves + ':';
-    document.querySelector('.stats-item:nth-child(4) .stats-label').textContent = texts.levelsCompleted + ':';
 
     updateUserInfo();
 }
 
+// Отображение модального окна ввода имени пользователя
 function showUsernameModal() {
     usernameModal.classList.remove('hidden');
 }
 
+// Скрытие модального окна ввода имени пользователя
 function hideUsernameModal() {
     usernameModal.classList.add('hidden');
 }
 
+// Установка имени пользователя
 function setUsername() {
     const username = usernameInput.value.trim();
     if (username) {
@@ -713,12 +593,12 @@ function setUsername() {
         hideUsernameModal();
         updateUserInfo();
         localStorage.setItem('username', username);
-        showTutorial();
     } else {
         alert(isRussian ? 'Пожалуйста, введите ваше имя' : 'Please enter your name');
     }
 }
 
+// Обновление информации о пользователе
 function updateUserInfo() {
     const userInfoElement = document.getElementById('user-info');
     if (currentUser) {
@@ -728,10 +608,12 @@ function updateUserInfo() {
     }
 }
 
+// Переключение модального окна настроек
 function toggleSettingsModal() {
     settingsModal.classList.toggle('hidden');
 }
 
+// Переключение темы
 function toggleTheme() {
     isDarkTheme = !isDarkTheme;
     document.body.classList.toggle('light-theme', !isDarkTheme);
@@ -739,6 +621,7 @@ function toggleTheme() {
     localStorage.setItem('isDarkTheme', isDarkTheme);
 }
 
+// Обновление цветов темы
 function updateThemeColors() {
     if (isDarkTheme) {
         document.documentElement.style.setProperty('--bg-color', '#121212');
@@ -755,6 +638,7 @@ function updateThemeColors() {
     }
 }
 
+// Отображение подсказки
 function showHint() {
     hintText.textContent = isRussian ? 
         'Горизонтальные блоки: двигаются только влево и вправо\nВертикальные блоки: двигаются только вверх и вниз\nКвадратные блоки: могут двигаться в любом направлении\nКлюч: нужно довести до правого края' : 
@@ -762,14 +646,12 @@ function showHint() {
     hintModal.classList.remove('hidden');
 }
 
+// Скрытие подсказки
 function hideHint() {
     hintModal.classList.add('hidden');
 }
 
-function updateCurrentLevelDisplay() {
-    currentLevelDisplay.textContent = isRussian ? `Уровень ${currentLevel}` : `Level ${currentLevel}`;
-}
-
+// Статистика
 function showStats() {
     const stats = {
         totalGames: localStorage.getItem('totalGames') || 0,
@@ -783,21 +665,37 @@ function showStats() {
     document.getElementById('avg-moves').textContent = stats.averageMoves;
     document.getElementById('levels-completed').textContent = stats.levelsCompleted;
 
+    const statsModal = document.getElementById('stats-modal');
     statsModal.classList.remove('hidden');
 }
 
+// Статистика скрыть
 function hideStats() {
+    const statsModal = document.getElementById('stats-modal');
     statsModal.classList.add('hidden');
 }
 
-function nextLevel() {
-    if (currentLevel < levels.length) {
-        currentLevel++;
-        resetGame();
-    } else {
-        alert(isRussian ? 'Вы прошли все уровни!' : 'You have completed all levels!');
-    }
-    winModal.classList.add('hidden');
+// Таблица лидеров
+function showLeaderboard() {
+    const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+    leaderboardBody.innerHTML = '';
+    leaderboard.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${entry.name}</td>
+            <td>${entry.level}</td>
+            <td>${entry.time}</td>
+            <td>${entry.moves}</td>
+        `;
+        leaderboardBody.appendChild(row);
+    });
+    leaderboardModal.classList.remove('hidden');
+}
+
+// Таблица скрыть
+function hideLeaderboard() {
+    leaderboardModal.classList.add('hidden');
 }
 
 function updateLeaderboard(finalTime) {
@@ -817,41 +715,40 @@ function updateLeaderboard(finalTime) {
     localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
 }
 
-function showLeaderboard() {
-    const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-    leaderboardBody.innerHTML = '';
-    leaderboard.forEach((entry, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${entry.name}</td>
-            <td>${entry.level}</td>
-            <td>${entry.time}</td>
-            <td>${entry.moves}</td>
-        `;
-        leaderboardBody.appendChild(row);
-    });
-    leaderboardModal.classList.remove('hidden');
+// Обновление отображения текущего уровня
+function updateCurrentLevelDisplay() {
+    currentLevelDisplay.textContent = isRussian ? `Уровень ${currentLevel}` : `Level ${currentLevel}`;
 }
 
-function hideLeaderboard() {
-    leaderboardModal.classList.add('hidden');
+// Переход на следующий уровень
+function nextLevel() {
+    if (currentLevel < levels.length) {
+        currentLevel++;
+        resetGame();
+    } else {
+        alert(isRussian ? 'Вы прошли все уровни!' : 'You have completed all levels!');
+    }
+    winModal.classList.add('hidden');
 }
 
+// Отображение задач
 function showTasks() {
     updateTasks();
     tasksModal.classList.remove('hidden');
 }
 
+// Скрытие задач
 function hideTasks() {
     tasksModal.classList.add('hidden');
 }
 
+// Обновление задач
 function updateTasks() {
     updateMainTasks();
     updateSideTasks();
 }
 
+// Обновление основных задач
 function updateMainTasks() {
     mainTaskList.innerHTML = '';
     levels.forEach((level, index) => {
@@ -880,6 +777,7 @@ function updateMainTasks() {
     });
 }
 
+// Обновление побочных задач
 function updateSideTasks() {
     sideTaskList.innerHTML = '';
     const sideTasks = [
@@ -907,19 +805,12 @@ function updateSideTasks() {
             e.preventDefault();
             const taskId = e.target.dataset.task;
             window.open(e.target.href, '_blank');
-            showSubscriptionModal(taskId);
+            completeSideTask(taskId);
         });
     });
 }
 
-function showSubscriptionModal(taskId) {
-    subscriptionModal.classList.remove('hidden');
-    setTimeout(() => {
-        completeSideTask(taskId);
-        subscriptionModal.classList.add('hidden');
-    }, 5000);
-}
-
+// Завершение побочной задачи
 function completeSideTask(taskId) {
     if (!completedSideTasks.includes(taskId)) {
         completedSideTasks.push(taskId);
@@ -929,6 +820,7 @@ function completeSideTask(taskId) {
     }
 }
 
+// Переключение вкладок в модальном окне задач
 function switchTab(tabName) {
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -940,6 +832,7 @@ function switchTab(tabName) {
     document.getElementById(`${tabName}-tasks`).classList.add('active');
 }
 
+// Добавление монет
 function addCoins(amount) {
     coins += amount;
     localStorage.setItem('coins', coins);
@@ -947,10 +840,12 @@ function addCoins(amount) {
     showCoinAnimation(amount);
 }
 
+// Обновление счетчика монет
 function updateCoinCounter() {
     coinCount.textContent = coins;
 }
 
+// Анимация добавления монет
 function showCoinAnimation(amount) {
     const coinAnimation = document.createElement('div');
     coinAnimation.className = 'coin-animation';
@@ -964,133 +859,7 @@ function showCoinAnimation(amount) {
     }, 1000);
 }
 
-function showTutorial() {
-    tutorialStep = 0;
-    showNextTutorialStep();
-}
-
-function showNextTutorialStep() {
-    const tutorialSteps = [
-        {
-            text: isRussian ? 'Добро пожаловать в UnBlock Me! Цель игры - вставить ключ в замок, передвигая другие блоки что бы освободить путь.' : 'Welcome to UnBlock Me! The goal of the game is to insert the key into the lock by moving other blocks to clear the way.',
-            highlight: '#game-board'
-        },
-        {
-            text: isRussian ? 'Зарабатывайте монеты, проходя уровни и выполняя задания.' : 'Earn coins by completing levels and tasks.',
-            highlight: '#coin-counter'
-        },
-        {
-            text: isRussian ? 'Уровни обновляются каждые 24 часа. Не пропускайте обновления, чтобы заработать больше монет!' : 'Levels are updated every 24 hours. Don\'t miss updates to earn more coins!',
-            highlight: '#level-btn'
-        }
-    ];
-
-    if (tutorialStep < tutorialSteps.length) {
-        const step = tutorialSteps[tutorialStep];
-        tutorialText.textContent = step.text;
-        tutorialModal.classList.remove('hidden');
-        highlightElement(step.highlight);
-    } else {
-        tutorialModal.classList.add('hidden');
-        removeHighlight();
-    }
-}
-
-function highlightElement(selector) {
-    removeHighlight();
-    const element = document.querySelector(selector);
-    if (element) {
-        const highlight = document.createElement('div');
-        highlight.className = 'tutorial-highlight';
-        const rect = element.getBoundingClientRect();
-        highlight.style.left = `${rect.left - 5}px`;
-        highlight.style.top = `${rect.top - 5}px`;
-        highlight.style.width = `${rect.width + 10}px`;
-        highlight.style.height = `${rect.height + 10}px`;
-        document.body.appendChild(highlight);
-    }
-}
-
-function removeHighlight() {
-    const existingHighlight = document.querySelector('.tutorial-highlight');
-    if (existingHighlight) {
-        existingHighlight.remove();
-    }
-}
-
-startBtn.addEventListener('click', startGame);
-resetBtn.addEventListener('click', resetGame);
-hintBtn.addEventListener('click', showHint);
-levelBtn.addEventListener('click', showLevelModal);
-settingsBtn.addEventListener('click', toggleSettingsModal);
-submitUsernameBtn.addEventListener('click', setUsername);
-closeSettingsBtn.addEventListener('click', toggleSettingsModal);
-languageToggle.addEventListener('click', toggleLanguage);
-themeToggle.addEventListener('change', toggleTheme);
-confirmLevelBtn.addEventListener('click', changeLevel);
-statsBtn.addEventListener('click', showStats);
-nextLevelBtn.addEventListener('click', nextLevel);
-closeHintBtn.addEventListener('click', hideHint);
-closeStatsBtn.addEventListener('click', hideStats);
-showLeaderboardBtn.addEventListener('click', showLeaderboard);
-closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
-tasksBtn.addEventListener('click', showTasks);
-closeTasksBtn.addEventListener('click', hideTasks);
-tutorialNextBtn.addEventListener('click', () => {
-    tutorialStep++;
-    showNextTutorialStep();
-});
-
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-});
-
-window.addEventListener('load', () => {
-    createBoard();
-    populateLevelSelect();
-    updateTexts();
-    updateCurrentLevelDisplay();
-    updateThemeColors();
-
-    const savedUsername = localStorage.getItem('username');
-    if (savedUsername) {
-        currentUser = { name: savedUsername };
-        updateUserInfo();
-        showTutorial();
-    } else {
-        showUsernameModal();
-    }
-
-    completedLevels = JSON.parse(localStorage.getItem('completedLevels') || '[]');
-    completedSideTasks = JSON.parse(localStorage.getItem('completedSideTasks') || '[]');
-    coins = parseInt(localStorage.getItem('coins') || '0');
-    updateCoinCounter();
-
-    isDarkTheme = localStorage.getItem('isDarkTheme') === 'true';
-    themeToggle.checked = isDarkTheme;
-    updateThemeColors();
-});
-
-function undo() {
-    if (moveHistory.length > 0) {
-        const lastMove = moveHistory.pop();
-        currentBoard = lastMove.board;
-        updateBlocks();
-        moves--;
-        updateMovesCounter();
-    }
-}
-
-// Prevent scrolling when touching the game board
-gameBoard.addEventListener('touchmove', (e) => {
-    if (isTouchingGameBoard) {
-        e.preventDefault();
-    }
-}, { passive: false });
-
-// Add this to initialize the game when the window loads
-window.addEventListener('load', initGame);
-
+// Инициализация игры
 function initGame() {
     createBoard();
     populateLevelSelect();
@@ -1102,7 +871,6 @@ function initGame() {
     if (savedUsername) {
         currentUser = { name: savedUsername };
         updateUserInfo();
-        showTutorial();
     } else {
         showUsernameModal();
     }
@@ -1117,15 +885,49 @@ function initGame() {
     updateThemeColors();
 }
 
-// Call this function to start a new game session
+// Добавление обработчиков событий
+startBtn.addEventListener('click', startGame);
+resetBtn.addEventListener('click', resetGame);
+hintBtn.addEventListener('click', showHint);
+statsBtn.addEventListener('click', showStats);
+closeStatsBtn.addEventListener('click', hideStats);
+showLeaderboardBtn.addEventListener('click', showLeaderboard);
+closeLeaderboardBtn.addEventListener('click', hideLeaderboard);
+levelBtn.addEventListener('click', showLevelModal);
+settingsBtn.addEventListener('click', toggleSettingsModal);
+submitUsernameBtn.addEventListener('click', setUsername);
+closeSettingsBtn.addEventListener('click', toggleSettingsModal);
+languageToggle.addEventListener('click', toggleLanguage);
+themeToggle.addEventListener('change', toggleTheme);
+confirmLevelBtn.addEventListener('click', changeLevel);
+nextLevelBtn.addEventListener('click', nextLevel);
+closeHintBtn.addEventListener('click', hideHint);
+tasksBtn.addEventListener('click', showTasks);
+closeTasksBtn.addEventListener('click', hideTasks);
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// Предотвращение прокрутки при касании игрового поля
+gameBoard.addEventListener('touchmove', (e) => {
+    if (gameStarted) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Инициализация игры при загрузке окна
+window.addEventListener('load', initGame);
+
+// Функция для запуска новой игровой сессии
 function startNewSession() {
     resetGame();
     startGame();
 }
 
-// You can add more levels or randomly generate them here
+// Функция для добавления новых уровней
 function addNewLevels() {
-    // Add new level layouts to the levels array
+    // Добавьте новые макеты уровней в массив levels
     levels.push([
         [RED, RED, EMPTY, GREEN, GREEN, RED],
         [RED, RED, EMPTY, EMPTY, EMPTY, RED],
@@ -1134,24 +936,23 @@ function addNewLevels() {
         [RED, RED, EMPTY, RED, GREEN, GREEN],
         [RED, RED, EMPTY, EMPTY, EMPTY, RED]
     ]);
-    // Update level select options
+    // Обновите опции выбора уровня
     populateLevelSelect();
 }
 
-// Function to generate a random level (you can implement your own logic here)
+// Функция для генерации случайного уровня
 function generateRandomLevel() {
-    // This is a simple example, you should implement more sophisticated logic
-    const newLevel = Array(6).fill().map(() => Array(6).fill(EMPTY));
+    const newLevel = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
     
-    // Add key block
-    const keyRow = Math.floor(Math.random() * 6);
+    // Добавление ключевого блока
+    const keyRow = Math.floor(Math.random() * BOARD_SIZE);
     newLevel[keyRow][0] = KEY;
     newLevel[keyRow][1] = KEY;
 
-    // Add some random blocks
+    // Добавление случайных блоков
     for (let i = 0; i < 10; i++) {
-        const row = Math.floor(Math.random() * 6);
-        const col = Math.floor(Math.random() * 6);
+        const row = Math.floor(Math.random() * BOARD_SIZE);
+        const col = Math.floor(Math.random() * BOARD_SIZE);
         if (newLevel[row][col] === EMPTY) {
             newLevel[row][col] = Math.random() < 0.5 ? RED : GREEN;
         }
@@ -1160,13 +961,65 @@ function generateRandomLevel() {
     return newLevel;
 }
 
-// Function to add a random level
+// Функция для добавления случайного уровня
 function addRandomLevel() {
     levels.push(generateRandomLevel());
     populateLevelSelect();
 }
 
-// Add these event listeners for the new buttons if you decide to add them to your HTML
-// document.getElementById('new-session-btn').addEventListener('click', startNewSession);
-// document.getElementById('add-levels-btn').addEventListener('click', addNewLevels);
-// document.getElementById('random-level-btn').addEventListener('click', addRandomLevel);
+// Функция для запуска новой игровой сессии
+function startNewSession() {
+    resetGame();
+    startGame();
+}
+
+// Функция для добавления новых уровней
+function addNewLevels() {
+    // Добавьте новые макеты уровней в массив levels
+    levels.push([
+        [RED, RED, EMPTY, GREEN, GREEN, RED],
+        [RED, RED, EMPTY, EMPTY, EMPTY, RED],
+        [KEY, KEY, EMPTY, RED, RED, RED],
+        [GREEN, GREEN, EMPTY, RED, EMPTY, EMPTY],
+        [RED, RED, EMPTY, RED, GREEN, GREEN],
+        [RED, RED, EMPTY, EMPTY, EMPTY, RED]
+    ]);
+    // Обновите опции выбора уровня
+    populateLevelSelect();
+}
+
+// Функция для генерации случайного уровня
+function generateRandomLevel() {
+    const newLevel = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
+    
+    // Добавление ключевого блока
+    const keyRow = Math.floor(Math.random() * BOARD_SIZE);
+    newLevel[keyRow][0] = KEY;
+    newLevel[keyRow][1] = KEY;
+
+    // Добавление случайных блоков
+    for (let i = 0; i < 10; i++) {
+        const row = Math.floor(Math.random() * BOARD_SIZE);
+        const col = Math.floor(Math.random() * BOARD_SIZE);
+        if (newLevel[row][col] === EMPTY) {
+            newLevel[row][col] = Math.random() < 0.5 ? RED : GREEN;
+        }
+    }
+
+    return newLevel;
+}
+
+// Функция для добавления случайного уровня
+function addRandomLevel() {
+    levels.push(generateRandomLevel());
+    populateLevelSelect();
+}
+
+// Инициализация игры при загрузке окна
+window.addEventListener('load', initGame);
+
+// Если вы хотите сделать некоторые функции доступными глобально (например, для отладки),
+// вы можете присвоить их к объекту window:
+window.startNewSession = startNewSession;
+window.addNewLevels = addNewLevels;
+window.addRandomLevel = addRandomLevel;
