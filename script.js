@@ -117,19 +117,37 @@ const levels = [
 
 let currentBoard = JSON.parse(JSON.stringify(levels[0]));
 
+// Замочек в ячейке
+function addLockAndHighlight() {
+    const lockCell = document.querySelector(`.cell[data-row="2"][data-col="5"]`);
+    if (lockCell) {
+        // Добавляем подсвеченную правую стенку
+        const highlight = document.createElement('div');
+        highlight.className = 'highlight-right';
+        lockCell.appendChild(highlight);
+
+        // Добавляем замочек
+        const lock = document.createElement('div');
+        lock.className = 'lock';
+        lock.textContent = '🔒';
+        lockCell.appendChild(lock);
+    }
+}
+
 // Создание игрового поля
 function createBoard() {
     gameBoard.innerHTML = '';
     gameBoard.style.width = '100%';
     gameBoard.style.aspectRatio = '1 / 1';
     gameBoard.style.position = 'relative';
-    gameBoard.appendChild(startOverlay);
     
     // Создание сетки
     for (let i = 0; i < BOARD_SIZE; i++) {
         for (let j = 0; j < BOARD_SIZE; j++) {
             const cell = document.createElement('div');
             cell.classList.add('cell');
+            cell.dataset.row = i;
+            cell.dataset.col = j;
             cell.style.position = 'absolute';
             cell.style.width = `${100 / BOARD_SIZE}%`;
             cell.style.height = `${100 / BOARD_SIZE}%`;
@@ -141,6 +159,10 @@ function createBoard() {
     }
     
     updateBlocks();
+    addLockAndHighlight();
+    
+    // Добавляем startOverlay в конце, чтобы он был поверх всех элементов
+    gameBoard.appendChild(startOverlay);
 }
 
 // Обновление блоков на поле
@@ -301,8 +323,26 @@ function canMoveTo(block, newCol, newRow) {
     const oldCol = parseInt(block.dataset.col);
     const oldRow = parseInt(block.dataset.row);
 
+        // console.log(`Проверка движения для блока: тип=${blockType}, номер=${blockNumber}, размер=${width}x${height}, из (${oldCol},${oldRow}) в (${newCol},${newRow})`);
+
     // Проверка на выход за пределы доски
     if (newCol < 0 || newCol + width > BOARD_SIZE || newRow < 0 || newRow + height > BOARD_SIZE) {
+        console.log('Движение за пределы доски');
+        return false;
+    }
+
+    // Определение возможных направлений движения на основе размеров блока
+    const canMoveHorizontal = height === 1 || (blockType === 'B' && width === 1);
+    const canMoveVertical = width === 1 || (blockType === 'B' && height === 1);
+
+        // console.log(`Может двигаться: горизонтально=${canMoveHorizontal}, вертикально=${canMoveVertical}`);
+
+    // Проверка направления движения
+    const isMovingHorizontally = newCol !== oldCol;
+    const isMovingVertically = newRow !== oldRow;
+
+    if ((isMovingHorizontally && !canMoveHorizontal) || (isMovingVertically && !canMoveVertical)) {
+        console.log('Недопустимое направление движения');
         return false;
     }
 
@@ -321,17 +361,20 @@ function canMoveTo(block, newCol, newRow) {
                 const checkRow = currentRow + i;
                 const checkCol = currentCol + j;
                 if (checkRow < 0 || checkRow >= BOARD_SIZE || checkCol < 0 || checkCol >= BOARD_SIZE) {
-                    return false; // Выход за границы поля
+                    console.log(`Выход за границы поля: (${checkRow},${checkCol})`);
+                    return false;
                 }
                 const cellContent = currentBoard[checkRow][checkCol];
                 if (cellContent !== EMPTY && cellContent !== blockType + blockNumber) {
-                    return false; // Столкновение с другим блоком
+                    console.log(`Столкновение с другим блоком: (${checkRow},${checkCol})`);
+                    return false;
                 }
             }
         }
     }
 
-    return true; // Движение возможно
+        // console.log('Движение возможно');
+    return true;
 }
 
 // Обновление позиции блока
