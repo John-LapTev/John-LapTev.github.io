@@ -156,9 +156,9 @@ const levels = [
          [RED, GREEN, GREEN, EMPTY, EMPTY, RED]
     ],
     [
-         [RED+'t2', GREEN, GREEN, EMPTY, RED+'t1', EMPTY],
-         [RED+'t2', EMPTY, GREEN, GREEN, RED+'t1', EMPTY],
-         [KEY, KEY, RED, EMPTY, RED+'t1', RED],
+         [EMPTY, RED, GREEN, GREEN, RED, EMPTY],
+         [EMPTY, RED, GREEN, GREEN, RED, EMPTY],
+         [KEY, KEY, RED, EMPTY, RED, RED],
          [RED, EMPTY, RED, GREEN, GREEN, RED],
          [RED, GREEN, GREEN, RED, EMPTY, RED],
          [RED, EMPTY, EMPTY, RED, GREEN, GREEN]
