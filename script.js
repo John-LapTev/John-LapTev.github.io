@@ -62,6 +62,8 @@ const RED = 'R';
 const BLUE = 'B';
 const GREEN = 'G';
 const KEY = 'K';
+const SPECIAL_T1 = 'T1';
+const SPECIAL_T2 = 'T2';
 
 // Уровни игры
 const levels = [
@@ -152,6 +154,14 @@ const levels = [
          [EMPTY, EMPTY, RED, RED, GREEN, GREEN],
          [RED, EMPTY, RED, GREEN, GREEN, RED],
          [RED, GREEN, GREEN, EMPTY, EMPTY, RED]
+    ],
+    [
+         [RED+'t2', GREEN, GREEN, EMPTY, RED+'t1', EMPTY],
+         [RED+'t2', EMPTY, GREEN, GREEN, RED+'t1', EMPTY],
+         [KEY, KEY, RED, EMPTY, RED+'t1', RED],
+         [RED, EMPTY, RED, GREEN, GREEN, RED],
+         [RED, GREEN, GREEN, RED, EMPTY, RED],
+         [RED, EMPTY, EMPTY, RED, GREEN, GREEN]
     ],    
 ];
 
@@ -238,7 +248,7 @@ function isPartOfLargerBlock(row, col) {
 
 // Разделение типа и номера блока
 function splitTypeAndNumber(cell) {
-    const match = cell.match(/([RGBK])(\d+)?/);
+    const match = cell.match(/([RGBKT])(\d+|t1|t2)?/);
     return match ? [match[1], match[2] || ''] : [cell, ''];
 }
 
@@ -259,13 +269,13 @@ function createBlock(row, col, blockId) {
     let width = 1, height = 1;
     
     // Определение размеров блока
-    if (type === GREEN || type === KEY || (type === BLUE && number)) {
+    if (type === GREEN || type === KEY || (type === BLUE && number) || type === 'T') {
         while (col + width < BOARD_SIZE && isSameBlock(currentBoard[row][col + width], currentBoard[row][col])) {
             width++;
         }
     }
     
-    if (type === RED || (type === BLUE && (number || width === 1))) {
+    if (type === RED || (type === BLUE && (number || width === 1)) || type === 'T') {
         while (row + height < BOARD_SIZE && isSameBlock(currentBoard[row + height][col], currentBoard[row][col])) {
             height++;
         }
@@ -289,6 +299,17 @@ function createBlock(row, col, blockId) {
     if (type === KEY) {
         block.innerHTML = '🔑';
     }
+
+    // Добавляем смещение для специальных блоков
+    if (number === 't1' || number === 't2') {
+        const offset = number === 't1' ? -0.5 : 0.5;
+        if (type === RED) {
+            block.style.left = `calc(${parseFloat(block.style.left)} + ${offset * cellSize}%)`;
+        } else if (type === GREEN) {
+            block.style.top = `calc(${parseFloat(block.style.top)} + ${offset * cellSize}%)`;
+        }
+    }
+
     return block;
 }
 
@@ -363,11 +384,8 @@ function canMoveTo(block, newCol, newRow) {
     const oldCol = parseInt(block.dataset.col);
     const oldRow = parseInt(block.dataset.row);
 
-        // console.log(`Проверка движения для блока: тип=${blockType}, номер=${blockNumber}, размер=${width}x${height}, из (${oldCol},${oldRow}) в (${newCol},${newRow})`);
-
     // Проверка на выход за пределы доски
     if (newCol < 0 || newCol + width > BOARD_SIZE || newRow < 0 || newRow + height > BOARD_SIZE) {
-        console.log('Движение за пределы доски');
         return false;
     }
 
@@ -375,14 +393,11 @@ function canMoveTo(block, newCol, newRow) {
     const canMoveHorizontal = height === 1 || (blockType === 'B' && width === 1);
     const canMoveVertical = width === 1 || (blockType === 'B' && height === 1);
 
-        // console.log(`Может двигаться: горизонтально=${canMoveHorizontal}, вертикально=${canMoveVertical}`);
-
     // Проверка направления движения
     const isMovingHorizontally = newCol !== oldCol;
     const isMovingVertically = newRow !== oldRow;
 
     if ((isMovingHorizontally && !canMoveHorizontal) || (isMovingVertically && !canMoveVertical)) {
-        console.log('Недопустимое направление движения');
         return false;
     }
 
@@ -401,27 +416,42 @@ function canMoveTo(block, newCol, newRow) {
                 const checkRow = currentRow + i;
                 const checkCol = currentCol + j;
                 if (checkRow < 0 || checkRow >= BOARD_SIZE || checkCol < 0 || checkCol >= BOARD_SIZE) {
-                    console.log(`Выход за границы поля: (${checkRow},${checkCol})`);
                     return false;
                 }
                 const cellContent = currentBoard[checkRow][checkCol];
                 if (cellContent !== EMPTY && cellContent !== blockType + blockNumber) {
-                    console.log(`Столкновение с другим блоком: (${checkRow},${checkCol})`);
-                    return false;
+                    // Специальные блоки могут проходить через другие блоки
+                    if (!(blockNumber === 't1' || blockNumber === 't2')) {
+                        return false;
+                    }
                 }
             }
         }
     }
 
-        // console.log('Движение возможно');
     return true;
 }
 
 // Обновление позиции блока
 function updateBlockPosition(block, col, row) {
-    const cellSize = 100 / BOARD_SIZE; // BOARD_SIZE должен быть равен 6
-    block.style.left = `${col * cellSize}%`;
-    block.style.top = `${row * cellSize}%`;
+    const cellSize = 100 / BOARD_SIZE;
+    let left = col * cellSize;
+    let top = row * cellSize;
+
+    const blockNumber = block.dataset.number;
+    const blockType = block.dataset.type;
+
+    if (blockNumber === 't1' || blockNumber === 't2') {
+        const offset = blockNumber === 't1' ? -0.5 : 0.5;
+        if (blockType === RED) {
+            left += offset * cellSize;
+        } else if (blockType === GREEN) {
+            top += offset * cellSize;
+        }
+    }
+
+    block.style.left = `${left}%`;
+    block.style.top = `${top}%`;
     block.dataset.col = col;
     block.dataset.row = row;
 }
@@ -1002,54 +1032,6 @@ gameBoard.addEventListener('touchmove', (e) => {
 
 // Инициализация игры при загрузке окна
 window.addEventListener('load', initGame);
-
-// Функция для запуска новой игровой сессии
-function startNewSession() {
-    resetGame();
-    startGame();
-}
-
-// Функция для добавления новых уровней
-function addNewLevels() {
-    // Добавьте новые макеты уровней в массив levels
-    levels.push([
-        [RED, RED, EMPTY, GREEN, GREEN, RED],
-        [RED, RED, EMPTY, EMPTY, EMPTY, RED],
-        [KEY, KEY, EMPTY, RED, RED, RED],
-        [GREEN, GREEN, EMPTY, RED, EMPTY, EMPTY],
-        [RED, RED, EMPTY, RED, GREEN, GREEN],
-        [RED, RED, EMPTY, EMPTY, EMPTY, RED]
-    ]);
-    // Обновите опции выбора уровня
-    populateLevelSelect();
-}
-
-// Функция для генерации случайного уровня
-function generateRandomLevel() {
-    const newLevel = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
-    
-    // Добавление ключевого блока
-    const keyRow = Math.floor(Math.random() * BOARD_SIZE);
-    newLevel[keyRow][0] = KEY;
-    newLevel[keyRow][1] = KEY;
-
-    // Добавление случайных блоков
-    for (let i = 0; i < 10; i++) {
-        const row = Math.floor(Math.random() * BOARD_SIZE);
-        const col = Math.floor(Math.random() * BOARD_SIZE);
-        if (newLevel[row][col] === EMPTY) {
-            newLevel[row][col] = Math.random() < 0.5 ? RED : GREEN;
-        }
-    }
-
-    return newLevel;
-}
-
-// Функция для добавления случайного уровня
-function addRandomLevel() {
-    levels.push(generateRandomLevel());
-    populateLevelSelect();
-}
 
 // Функция для запуска новой игровой сессии
 function startNewSession() {
