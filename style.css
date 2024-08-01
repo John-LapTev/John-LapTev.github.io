@@ -67,7 +67,6 @@ body.light-theme .block {
 }
 
 .cell {
-    /* z-index: 1; */
     position: absolute;
     width: calc(100% / 6);
     height: calc(100% / 6);
@@ -127,13 +126,6 @@ body.light-theme .block {
   margin: 1px;
   border: 1px solid rgb(106 106 106);
 }
-
-/* Увеличиваем отступы между блоками
-.block { 
-    width: calc(100% / 6 - 4px) !important;
-    height: calc(100% / 6 - 4px) !important;
-    margin: 2px;
-}  */
 
 .block:hover {
   transform: scale(1.05);
@@ -672,4 +664,25 @@ input:checked + .slider:before {
     to {
         box-shadow: 0 0 20px gold;
     }
+}
+
+/* Добавим стили для специальных блоков */
+.block.r.nt1, .block.r.nt2, .block.g.nt1, .block.g.nt2 {
+    z-index: 20; /* Чтобы специальные блоки отображались поверх обычных */
+    opacity: 0.8; /* Делаем их немного прозрачными для визуального отличия */
+}
+
+.block.r.nt1, .block.r.nt2 {
+    border-left: 2px solid #fff;
+    border-right: 2px solid #fff;
+}
+
+.block.g.nt1, .block.g.nt2 {
+    border-top: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+/* Добавляем эффект свечения для выделения специальных блоков */
+.block.nt1, .block.nt2 {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
