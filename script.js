@@ -319,6 +319,7 @@ function startDrag(e) {
     e.preventDefault();
     selectedBlock = e.target.closest('.block');
     if (selectedBlock) {
+        isMovingBlock = true;
         const startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         const startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         const startCol = parseInt(selectedBlock.dataset.col);
@@ -365,6 +366,7 @@ function startDrag(e) {
                     endGame();
                 }
             }
+            isMovingBlock = false;
             selectedBlock = null;
         }
 
@@ -1023,12 +1025,42 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
 });
 
-// Предотвращение прокрутки при касании игрового поля
-gameBoard.addEventListener('touchmove', (e) => {
-    if (gameStarted) {
-        e.preventDefault();
+let isMovingBlock = false;
+
+function preventScroll(e) {
+    // Разрешаем стандартное поведение для кнопки "Начать игру" и её оверлея
+    if (e.target.id === 'start-btn' || e.target.closest('#start-overlay')) {
+        return;
     }
+    
+    // Разрешаем движение блоков
+    if (e.target.closest('.block') || isMovingBlock) {
+        isMovingBlock = true;
+        return;
+    }
+    
+    // Предотвращаем прокрутку для остальной части игрового поля
+    e.preventDefault();
+}
+
+function endBlockMove() {
+    isMovingBlock = false;
+}
+
+// Предотвращение прокрутки при взаимодействии с игровым полем
+gameBoard.addEventListener('touchstart', preventScroll, { passive: false });
+gameBoard.addEventListener('touchmove', preventScroll, { passive: false });
+gameBoard.addEventListener('touchend', (e) => {
+    preventScroll(e);
+    endBlockMove();
 }, { passive: false });
+
+gameBoard.addEventListener('mousedown', preventScroll);
+gameBoard.addEventListener('mousemove', preventScroll);
+gameBoard.addEventListener('mouseup', (e) => {
+    preventScroll(e);
+    endBlockMove();
+});
 
 // Инициализация игры при загрузке окна
 window.addEventListener('load', initGame);
