@@ -162,14 +162,6 @@ const levels = [
          [RED, EMPTY, RED, GREEN, GREEN, RED],
          [RED, GREEN, GREEN, RED, EMPTY, RED],
          [RED, EMPTY, EMPTY, RED, GREEN, GREEN]
-    ],
-    [
-         [EMPTY, EMPTY, EMPTY, GREEN, GREEN, GREEN],
-         [EMPTY, EMPTY, EMPTY, RED, GREEN, GREEN],
-         [RED, KEY, KEY, RED, EMPTY, RED],
-         [RED, RED, GREEN, GREEN, GREEN, RED],
-         [RED+'2', RED, EMPTY, RED, GREEN, GREEN],
-         [RED+'2', GREEN, GREEN, RED, EMPTY, EMPTY]
     ],    
 ];
 
@@ -445,11 +437,27 @@ function canMoveTo(block, newCol, newRow) {
 // Обновление позиции блока
 function updateBlockPosition(block, col, row) {
     const cellSize = 100 / BOARD_SIZE;
-    let left = col * cellSize;
-    let top = row * cellSize;
-
+    const width = parseInt(block.dataset.width);
+    const height = parseInt(block.dataset.height);
     const blockNumber = block.dataset.number;
     const blockType = block.dataset.type;
+    
+    let left = col * cellSize;
+    let top = row * cellSize;
+    let blockWidth = width * cellSize;
+    let blockHeight = height * cellSize;
+
+    if (blockType === RED) {
+        left += 0.2;
+        top += 0.2;
+        blockWidth -= 0.4;
+        blockHeight -= 0.4;
+    } else if (blockType === GREEN) {
+        left += 0.2;
+        top += 0.2;
+        blockWidth -= 0.4;
+        blockHeight -= 0.4;
+    }
 
     if (blockNumber === 't1' || blockNumber === 't2') {
         const offset = blockNumber === 't1' ? -0.5 : 0.5;
@@ -460,8 +468,10 @@ function updateBlockPosition(block, col, row) {
         }
     }
 
-    block.style.left = `${left}%`;
-    block.style.top = `${top}%`;
+    block.style.left = `calc(${left}% + 1px)`;
+    block.style.top = `calc(${top}% + 1px)`;
+    block.style.width = `calc(${blockWidth}% - 2px)`;
+    block.style.height = `calc(${blockHeight}% - 2px)`;
     block.dataset.col = col;
     block.dataset.row = row;
 }
