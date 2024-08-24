@@ -330,6 +330,14 @@ const levels = [
          [RED, EMPTY, RED, GREEN, GREEN, RED],
          [RED, GREEN, GREEN, RED, EMPTY, RED],
          [GREEN, GREEN, EMPTY, RED, EMPTY, RED]
+    ],
+    [
+         [EMPTY, GREEN, GREEN, EMPTY, EMPTY, EMPTY],
+         [GREEN, GREEN, RED, EMPTY, GREEN, GREEN],
+         [EMPTY, RED, RED, KEY, KEY, RED],
+         [RED, RED, GREEN, GREEN, GREEN, RED],
+         [RED, GREEN, GREEN, RED, EMPTY, RED],
+         [RED, EMPTY, EMPTY, RED, GREEN, GREEN]
     ],    
 ];
 
